@@ -164,6 +164,29 @@ button.danger {
   flex-wrap: wrap;
 }
 
+.tab-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tab-link {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.tab-link.active {
+  background: rgba(139, 32, 25, 0.12);
+  color: #7b1f19;
+  border-color: rgba(139, 32, 25, 0.25);
+}
+
 .label {
   color: var(--muted);
   font-size: 0.9rem;
@@ -450,11 +473,18 @@ p {
   color: #8b2019;
 }
 
+.admin-user-form-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.8fr;
+  gap: 12px;
+}
+
 @media (max-width: 1024px) {
   .hero,
   .split,
   .workspace-columns,
-  .panel-grid {
+  .panel-grid,
+  .admin-user-form-grid {
     grid-template-columns: 1fr;
   }
 

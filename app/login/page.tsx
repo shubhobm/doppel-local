@@ -68,7 +68,7 @@ export default function LoginPage() {
                 {loading ? "Signing in..." : "Sign in"}
               </button>
             </form>
-            <div className="notice">Username remains fixed to your exam account.</div>
+            <div className="notice">Use username <strong>smajumdar</strong> for admin access. Other users sign in with username only.</div>
           </div>
         </section>
       </div>
