@@ -59,6 +59,14 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
   const documents = currentBot?.documents ?? [];
 
   useEffect(() => {
+    setAllBots(bots);
+  }, [bots]);
+
+  useEffect(() => {
+    setCurrentBotId(activeBotId);
+  }, [activeBotId]);
+
+  useEffect(() => {
     const stored = window.localStorage.getItem(`bot-session-${currentBotId}`);
     if (stored) {
       setSessionKey(stored);
@@ -212,28 +220,6 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
     setChat((existing) => [...existing, { role: "assistant", content: payload.answer }]);
   }
 
-  async function createBot() {
-    setLoading(true);
-    setError("");
-    setMessage("");
-    const response = await fetch("/api/bots", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: `Chatbot ${allBots.length + 1}` })
-    });
-    const payload = await response.json();
-    setLoading(false);
-    if (!response.ok) {
-      setError(payload.error ?? "Could not create bot");
-      return;
-    }
-
-    const createdBot = payload.bot as BotRecord;
-    setAllBots((existing) => [...existing, createdBot]);
-    setCurrentBotId(createdBot.id);
-    setMessage("New chatbot created.");
-  }
-
   if (!currentBot) {
     return null;
   }
@@ -249,19 +235,6 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
             </div>
             <div className="badge">Config v{currentBot.configVersion}</div>
             <div className="badge">Model: gpt-5-nano</div>
-            <button className="secondary" onClick={createBot} disabled={loading}>New chatbot</button>
-          </div>
-          <div className="row">
-            {allBots.map((bot) => (
-              <button
-                key={bot.id}
-                className={bot.id === currentBot.id ? "badge" : "secondary"}
-                onClick={() => setCurrentBotId(bot.id)}
-              >
-                {bot.id === currentBot.id ? "• " : ""}
-                {bot.systemPrompt.slice(0, 18) || `Bot ${bot.id.slice(0, 6)}`}
-              </button>
-            ))}
           </div>
           <div className="notice">
             Upload limit remaining: {(remainingBytes / (1024 * 1024)).toFixed(1)} MB. Files used: {documents.length}/100.

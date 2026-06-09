@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { readSessionFromCookies } from "@/lib/auth";
 import { StudentWorkspace } from "@/components/StudentWorkspace";
+import { BotDashboardTable } from "@/components/BotDashboardTable";
 
 type DashboardPageProps = {
   searchParams?: Promise<{ bot?: string }>;
@@ -59,16 +60,27 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <div className="card-inner stack">
           <div className="row">
             <div>
-              <div className="kicker">Midterm bot builder</div>
+              <div className="kicker">IIM Bangalore</div>
               <h1>Welcome back, {user.email}.</h1>
             </div>
             <div className="badge">Role: {user.role}</div>
           </div>
           <p>
-            Configure your chatbot by uploading source material, editing the system prompt, and choosing the allowed LLM parameters. The model is frozen to gpt-5-nano.
+            Doppel lets you manage multiple chatbots, configure prompts and parameters, upload course material, and submit each chatbot for grading.
           </p>
         </div>
       </section>
+      <BotDashboardTable
+        bots={bots.map((candidate, index) => ({
+          id: candidate.id,
+          status: candidate.status,
+          displayName: candidate.systemPrompt?.trim()
+            ? candidate.systemPrompt.slice(0, 44)
+            : `Chatbot ${index + 1}`,
+          updatedAt: candidate.updatedAt.toISOString()
+        }))}
+        activeBotId={activeBot.id}
+      />
       <StudentWorkspace
         bots={bots.map((candidate) => ({
           id: candidate.id,

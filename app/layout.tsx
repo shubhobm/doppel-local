@@ -7,8 +7,8 @@ const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-sans"
 const ibmPlexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "Midterm Chatbot Studio",
-  description: "Student chatbot builder for the AI-native midterm"
+  title: "Doppel | IIM Bangalore Chatbots",
+  description: "Doppel chatbot workspace for IIM Bangalore"
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

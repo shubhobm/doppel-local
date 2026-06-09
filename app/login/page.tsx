@@ -40,8 +40,8 @@ export default function LoginPage() {
       <div className="hero">
         <section className="card">
           <div className="card-inner stack">
-            <div className="kicker">IIMB midterm chatbot</div>
-            <h1>Sign in to the chatbot studio.</h1>
+            <div className="kicker">IIM Bangalore</div>
+            <h1>Sign in to Doppel chatbot studio.</h1>
             <p>
               Use the fixed username and password to access the exam workspace, upload source material, tune the bot,
               and preview answers before submission.
