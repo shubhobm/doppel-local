@@ -103,6 +103,7 @@ async function main() {
       data: {
         userId: user.id,
         name: "Seeded Demo Chatbot",
+        isDemo: true,
         systemPrompt: DEMO_MARKER,
         temperature: 0.2,
         topP: 1,

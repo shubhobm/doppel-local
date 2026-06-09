@@ -124,6 +124,7 @@ export async function generateBotAnswer(params: {
   const session = await getOrCreateChatSession(bot.id, params.sessionKey);
   const recentMessages = await getRecentMessages(session.id);
   const chunks = await retrieveRelevantChunks(bot.id, params.question, 6);
+  const hasRetrievedChunks = chunks.length > 0;
   const retrievedContext = formatRetrievedContext(chunks);
 
   const conversation = recentMessages
@@ -135,8 +136,12 @@ export async function generateBotAnswer(params: {
   const systemPrompt = [
     "You are a midterm chatbot built by a student.",
     "Answer the user's question directly and clearly.",
-    "Use the provided source context and the conversation history.",
-    "If the context is insufficient, say so briefly and give the best grounded answer you can.",
+    hasRetrievedChunks
+      ? "Use the provided source context and the conversation history."
+      : "No source documents are available right now; answer using the student system prompt and conversation history.",
+    hasRetrievedChunks
+      ? "If the context is insufficient, say so briefly and give the best grounded answer you can."
+      : "Provide a best-effort direct answer without asking for retrieved chunks.",
     "Do not mention internal policies or retrieval mechanics unless asked.",
     bot.systemPrompt ? `Student system prompt: ${bot.systemPrompt}` : ""
   ]
@@ -174,17 +179,27 @@ export async function generateBotAnswer(params: {
             },
             {
               role: "user",
-              content: [
-                "Use the retrieved chunks below as the primary source of truth.",
-                "If the answer is not in the chunks, say the material is insufficient.",
-                "Keep the final answer concise and direct.",
-                "",
-                `Retrieved chunks:\n${contextText}`,
-                "",
-                `Conversation so far:\n${conversation}`,
-                "",
-                `Current question:\n${params.question}`
-              ].join("\n")
+              content: hasRetrievedChunks
+                ? [
+                    "Use the retrieved chunks below as the primary source of truth.",
+                    "If the answer is not in the chunks, say the material is insufficient.",
+                    "Keep the final answer concise and direct.",
+                    "",
+                    `Retrieved chunks:\n${contextText}`,
+                    "",
+                    `Conversation so far:\n${conversation}`,
+                    "",
+                    `Current question:\n${params.question}`
+                  ].join("\n")
+                : [
+                    "No retrieved chunks are available for this request.",
+                    "Answer using the student system prompt and conversation history only.",
+                    "Keep the final answer concise and direct.",
+                    "",
+                    `Conversation so far:\n${conversation}`,
+                    "",
+                    `Current question:\n${params.question}`
+                  ].join("\n")
             }
           ]
         });

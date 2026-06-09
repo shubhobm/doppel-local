@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { LogoutButton } from "@/components/LogoutButton";
 
 export function ForgotPasswordForm() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -49,7 +50,7 @@ export function ForgotPasswordForm() {
     <section className="card">
       <div className="card-inner stack">
         <div className="kicker">Account security</div>
-        <h1>Forgot password</h1>
+        <h1>Change password</h1>
         <p>Change your password while you are signed in.</p>
         <form className="stack" onSubmit={handleSubmit}>
           <div>
@@ -86,7 +87,10 @@ export function ForgotPasswordForm() {
           <button type="submit" disabled={loading}>
             {loading ? "Updating..." : "Update password"}
           </button>
-          <a className="text-link" href="/dashboard">Back to dashboard</a>
+          <div className="row">
+            <a className="text-link" href="/dashboard">Back to dashboard</a>
+            <LogoutButton className="secondary" />
+          </div>
         </form>
       </div>
     </section>

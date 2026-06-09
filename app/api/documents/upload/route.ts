@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { getSessionUserFromRequest } from "@/lib/request";
 import { ALLOWED_MIME_TYPES, MAX_FILES, MAX_TOTAL_UPLOAD_BYTES } from "@/lib/limits";
 import { chunkText, extractTextFromUpload, saveUploadedFile } from "@/lib/files";
@@ -16,6 +17,10 @@ function mimeAllowed(file: File) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!env.UPLOADS_ENABLED) {
+    return NextResponse.json({ error: "Uploads are currently disabled." }, { status: 403 });
+  }
+
   const session = await getSessionUserFromRequest(request);
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

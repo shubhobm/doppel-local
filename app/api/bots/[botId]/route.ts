@@ -111,3 +111,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   return NextResponse.json({ bot: updated });
 }
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ botId: string }> }) {
+  const session = await getSessionUserFromRequest(request);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { botId } = await params;
+  const bot = await db.studentBot.findFirst({
+    where: { id: botId, userId: session.user.id }
+  });
+
+  if (!bot) {
+    return NextResponse.json({ error: "Bot not found" }, { status: 404 });
+  }
+
+  if (bot.isDemo || bot.name === "Seeded Demo Chatbot" || bot.name === "Demo Chatbot") {
+    return NextResponse.json({ error: "Demo chatbot cannot be deleted." }, { status: 409 });
+  }
+
+  await db.studentBot.delete({ where: { id: bot.id } });
+  return NextResponse.json({ ok: true });
+}

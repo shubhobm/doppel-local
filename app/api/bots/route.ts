@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
     data: {
       userId: session.user.id,
       name,
+      isDemo: false,
       systemPrompt: `You are a study assistant for ${name}.`,
       configVersion: 1
     },

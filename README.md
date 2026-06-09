@@ -25,6 +25,11 @@ OpenAI key resolution:
 - Deployed environments: use runtime `OPENAI_API_KEY` (for example, injected from your platform secret settings).
 - Local development: if `OPENAI_API_KEY` is not present in process env, the app falls back to `.env.local`.
 
+Upload feature flag:
+- `UPLOADS_ENABLED` controls whether source document upload/retrieval is enabled.
+- Default is `false` (system-prompt-only bots).
+- Set `UPLOADS_ENABLED=true` to enable uploads.
+
 SMTP variables are not required for the static login flow.
 
 ## Development

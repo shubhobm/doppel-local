@@ -129,6 +129,19 @@ button.danger {
   backdrop-filter: blur(18px);
 }
 
+.disabled-panel {
+  background: rgba(180, 180, 180, 0.22);
+  border-color: rgba(124, 32, 27, 0.14);
+  filter: grayscale(0.25);
+}
+
+.disabled-panel input,
+.disabled-panel button,
+.disabled-panel textarea,
+.disabled-panel select {
+  cursor: not-allowed;
+}
+
 .card-inner {
   padding: 24px;
 }

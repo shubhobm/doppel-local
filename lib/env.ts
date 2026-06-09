@@ -39,12 +39,15 @@ const localOpenAIKey =
     ? readEnvValueFromFile(path.join(process.cwd(), ".env.local"), "OPENAI_API_KEY")
     : "";
 
+const trueValues = new Set(["1", "true", "yes", "on"]);
+
 const envSchema = z.object({
   DATABASE_URL: z.string().default("postgresql://postgres:postgres@localhost:5432/midterm"),
   AUTH_SECRET: z.string().default("development-secret-development-secret-development-secret"),
   APP_URL: z.string().default("http://localhost:3000"),
   GRADER_API_KEY: z.string().default(""),
   OPENAI_API_KEY: z.string().default(""),
+  UPLOADS_ENABLED: z.string().default("false").transform((value) => trueValues.has(value.toLowerCase())),
   UPLOAD_DIR: z.string().default("./uploads")
 });
 

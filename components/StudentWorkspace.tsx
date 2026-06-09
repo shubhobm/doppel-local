@@ -30,6 +30,7 @@ type Props = {
   bots: BotRecord[];
   activeBotId: string;
   totalBytes: number;
+  uploadsEnabled: boolean;
 };
 
 type ChatEntry = {
@@ -37,7 +38,7 @@ type ChatEntry = {
   content: string;
 };
 
-export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
+export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled }: Props) {
   const [allBots, setAllBots] = useState(bots);
   const [currentBotId, setCurrentBotId] = useState(activeBotId);
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -264,6 +265,7 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
           <section className="card">
             <div className="card-inner stack">
               <h3>LLM parameters</h3>
+              <p className="small"><em>Click Save Settings nelow to reflect parameter changes in the right pane.</em></p>
               <div>
                 <div className="label">Chatbot name</div>
                 <input value={botName} onChange={(event) => setBotName(event.target.value)} maxLength={120} disabled={currentBot.status === "SUBMITTED"} />
@@ -292,18 +294,22 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
               </div>
               <div className="row">
                 <button onClick={saveBot} disabled={loading || currentBot.status === "SUBMITTED"}>Save settings</button>
-                <button className="secondary" onClick={toggleSubmission} disabled={loading}>
+                <button className="secondary" onClick={toggleSubmission} disabled={loading || !uploadsEnabled}>
                   {currentBot.status === "SUBMITTED" ? "Revert submission" : "Submit for grading"}
                 </button>
               </div>
             </div>
           </section>
 
-          <section className="card">
+          <section className={uploadsEnabled ? "card" : "card disabled-panel"}>
             <div className="card-inner stack">
               <h3>Source material</h3>
-              <p>Upload PDFs, text files, DOCX, or markdown files. The system indexes them automatically.</p>
-              <input type="file" multiple onChange={handleUpload} disabled={uploading || currentBot.status === "SUBMITTED"} />
+              <p>
+                {uploadsEnabled
+                  ? "Upload PDFs, text files, DOCX, or markdown files. The system indexes them automatically."
+                  : "Source uploads are disabled. This chatbot currently runs in system-prompt-only mode."}
+              </p>
+              <input type="file" multiple onChange={handleUpload} disabled={!uploadsEnabled || uploading || currentBot.status === "SUBMITTED"} />
               <div className="file-list">
                 {documents.map((doc) => (
                   <div className="file-item" key={doc.id}>
@@ -350,7 +356,7 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
           </div>
           <div className="divider" />
           <div className="row">
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ask a midterm-style question..." onKeyDown={(event) => {
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ask a question..." onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
                 void sendQuestion();

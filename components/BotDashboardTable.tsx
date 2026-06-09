@@ -7,6 +7,7 @@ type BotSummary = {
   id: string;
   status: string;
   name: string;
+  isDemo: boolean;
   updatedAt: string;
 };
 
@@ -18,10 +19,11 @@ type Props = {
 export function BotDashboardTable({ bots, activeBotId }: Props) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
+  const [deletingBotId, setDeletingBotId] = useState("");
   const [error, setError] = useState("");
 
   function goToBot(botId: string) {
-    router.push(`/dashboard?bot=${botId}`);
+    router.push(`/workspace?bot=${botId}`);
     router.refresh();
   }
 
@@ -52,6 +54,26 @@ export function BotDashboardTable({ bots, activeBotId }: Props) {
     router.refresh();
   }
 
+  async function deleteBot(botId: string) {
+    const confirmed = window.confirm("Delete this chatbot? This action cannot be undone.");
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingBotId(botId);
+    setError("");
+    const response = await fetch(`/api/bots/${botId}`, { method: "DELETE" });
+    const payload = await response.json().catch(() => ({}));
+    setDeletingBotId("");
+
+    if (!response.ok) {
+      setError(payload.error ?? "Could not delete chatbot");
+      return;
+    }
+
+    router.refresh();
+  }
+
   return (
     <section className="card">
       <div className="card-inner stack">
@@ -74,6 +96,7 @@ export function BotDashboardTable({ bots, activeBotId }: Props) {
                 <th>Name</th>
                 <th>Status</th>
                 <th>Last updated</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -90,6 +113,19 @@ export function BotDashboardTable({ bots, activeBotId }: Props) {
                     </span>
                   </td>
                   <td>{new Date(bot.updatedAt).toLocaleString()}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={deletingBotId === bot.id || bot.isDemo}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void deleteBot(bot.id);
+                      }}
+                    >
+                      {bot.isDemo ? "Protected" : deletingBotId === bot.id ? "Deleting..." : "Delete"}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
