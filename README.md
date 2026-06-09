@@ -48,6 +48,19 @@ SMTP variables are not required for the static login flow.
 2. Start the stack with `docker compose up --build`.
 3. Open `http://localhost:3000` once the app is ready.
 
+## One-click Vercel + Postgres
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/shubhobm/doppel&project-name=doppel)
+
+After import:
+1. In Vercel project Storage, create/attach Vercel Postgres.
+2. Set app secrets in Environment Variables: `AUTH_SECRET`, `APP_URL`, `GRADER_API_KEY`, `OPENAI_API_KEY`.
+3. Configure upload mode:
+  - system-prompt-only: `UPLOADS_ENABLED=false`
+  - uploads enabled: `UPLOADS_ENABLED=true`, `UPLOAD_BACKEND=vercel-blob`, `BLOB_READ_WRITE_TOKEN=<token>`
+4. Redeploy.
+
+Note: `DATABASE_URL` is auto-resolved from attached Vercel Postgres variables (`POSTGRES_PRISMA_URL`, `POSTGRES_URL_NON_POOLING`, `POSTGRES_URL`) when not explicitly set.
+
 ## Grader API
 `POST /api/grader/query`
 

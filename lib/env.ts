@@ -2,6 +2,14 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 
+if (!process.env.DATABASE_URL) {
+  const vercelPostgresUrl =
+    process.env.POSTGRES_PRISMA_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL;
+  if (vercelPostgresUrl) {
+    process.env.DATABASE_URL = vercelPostgresUrl;
+  }
+}
+
 function readEnvValueFromFile(filePath: string, key: string) {
   if (!fs.existsSync(filePath)) {
     return "";
@@ -56,4 +64,11 @@ export const env = envSchema.parse(process.env);
 
 if (!process.env.OPENAI_API_KEY && localOpenAIKey) {
   env.OPENAI_API_KEY = localOpenAIKey;
+}
+
+if (process.env.NODE_ENV === "production" && process.env.VERCEL === "1") {
+  const dbUrl = env.DATABASE_URL.trim().toLowerCase();
+  if (!dbUrl || dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1")) {
+    throw new Error("DATABASE_URL must be set to a reachable hosted database in production (not localhost).\nSet it in your deployment environment variables.");
+  }
 }
