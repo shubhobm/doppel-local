@@ -66,7 +66,12 @@ if (!process.env.OPENAI_API_KEY && localOpenAIKey) {
   env.OPENAI_API_KEY = localOpenAIKey;
 }
 
-if (process.env.NODE_ENV === "production" && process.env.VERCEL === "1") {
+const isVercelRuntime =
+  process.env.NODE_ENV === "production" &&
+  process.env.VERCEL === "1" &&
+  process.env.NEXT_PHASE !== "phase-production-build";
+
+if (isVercelRuntime) {
   const dbUrl = env.DATABASE_URL.trim().toLowerCase();
   if (!dbUrl || dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1")) {
     throw new Error("DATABASE_URL must be set to a reachable hosted database in production (not localhost).\nSet it in your deployment environment variables.");
