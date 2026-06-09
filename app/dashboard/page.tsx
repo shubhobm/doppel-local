@@ -62,7 +62,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <div className="card-inner stack">
           <div className="row">
             <div>
-              <div className="kicker">IIM Bangalore</div>
+              {/* <div className="kicker">IIM Bangalore</div> */}
               <h1>Welcome back, {displayUsername}.</h1>
             </div>
             <div className="badge">Role: {user.role}</div>

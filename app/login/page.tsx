@@ -40,7 +40,7 @@ export default function LoginPage() {
       <div className="hero">
         <section className="card">
           <div className="card-inner stack">
-            <div className="kicker">IIM Bangalore</div>
+            {/* <div className="kicker">IIM Bangalore</div> */}
             <h1>Sign in to Doppel chatbot studio.</h1>
             <p>
               Sign in to access the exam workspace, upload source material, tune chatbots,
