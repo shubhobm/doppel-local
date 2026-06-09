@@ -57,9 +57,16 @@ After import:
 3. Configure upload mode:
   - system-prompt-only: `UPLOADS_ENABLED=false`
   - uploads enabled: `UPLOADS_ENABLED=true`, `UPLOAD_BACKEND=vercel-blob`, `BLOB_READ_WRITE_TOKEN=<token>`
-4. Redeploy.
+4. Set the Vercel Build Command to: `prisma generate && prisma db push && next build`.
+5. Redeploy.
 
 Note: `DATABASE_URL` is auto-resolved from attached Vercel Postgres variables (`POSTGRES_PRISMA_URL`, `POSTGRES_URL_NON_POOLING`, `POSTGRES_URL`) when not explicitly set.
+
+If you are connecting an existing database that has no schema yet, run once from your machine:
+
+```bash
+DATABASE_URL="<your-neon-url>" npx prisma db push
+```
 
 ## Grader API
 `POST /api/grader/query`
