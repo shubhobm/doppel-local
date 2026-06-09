@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  GRADER
+  ADMIN
+}
+
+enum BotStatus {
+  DRAFT
+  SUBMITTED
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+}
+
+model User {
+  id                 String         @id @default(cuid())
+  email              String         @unique
+  role               Role           @default(STUDENT)
+  verifiedAt         DateTime?
+  passwordHash       String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  bots               StudentBot[]
+  verificationTokens VerificationToken[]
+  queryLogs          QueryLog[]
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model StudentBot {
+  id               String          @id @default(cuid())
+  userId           String
+  examId           String          @default("midterm_t4_2026")
+  status           BotStatus       @default(DRAFT)
+  systemPrompt     String          @default("")
+  temperature     Float           @default(0.2)
+  topP            Float           @default(1.0)
+  topK            Int             @default(20)
+  maxOutputTokens Int             @default(512)
+  configVersion   Int             @default(1)
+  submittedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  user            User            @relation(fields: [userId], references: [id])
+  documents       SourceDocument[]
+  chatSessions    ChatSession[]
+  queryLogs       QueryLog[]
+  @@index([userId, createdAt])
+}
+
+model SourceDocument {
+  id             String          @id @default(cuid())
+  botId          String
+  filename       String
+  storagePath    String
+  mimeType       String
+  sizeBytes      Int
+  chunkCount     Int             @default(0)
+  status         DocumentStatus  @default(UPLOADED)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  bot            StudentBot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  chunks         DocumentChunk[]
+}
+
+model DocumentChunk {
+  id           String         @id @default(cuid())
+  documentId   String
+  chunkIndex   Int
+  content      String
+  embedding    Json?
+  metadata     Json?
+  createdAt    DateTime       @default(now())
+  document     SourceDocument  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+model ChatSession {
+  id         String        @id @default(cuid())
+  botId      String
+  sessionKey String
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  bot        StudentBot    @relation(fields: [botId], references: [id], onDelete: Cascade)
+  messages   ChatMessage[]
+
+  @@unique([botId, sessionKey])
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  role      String
+  content   String
+  createdAt DateTime    @default(now())
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model QueryLog {
+  id            String      @id @default(cuid())
+  botId         String
+  userId        String?
+  actorRole     String
+  question      String
+  answer        String
+  configVersion Int
+  createdAt     DateTime    @default(now())
+  bot           StudentBot  @relation(fields: [botId], references: [id], onDelete: Cascade)
+  user          User?       @relation(fields: [userId], references: [id])
+
+  @@index([botId, createdAt])
+}
