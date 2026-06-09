@@ -14,6 +14,7 @@ type DocumentRecord = {
 type BotRecord = {
   id: string;
   name: string;
+  isDemo: boolean;
   status: string;
   systemPrompt: string;
   temperature: number;
@@ -51,6 +52,7 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
   const [chat, setChat] = useState<ChatEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
   const [sessionKey, setSessionKey] = useState("preview");
 
   const currentBot = useMemo(
@@ -208,9 +210,10 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
   }
 
   async function sendQuestion() {
-    if (!currentBot || !query.trim()) {
+    if (!currentBot || !query.trim() || chatLoading) {
       return;
     }
+    setChatLoading(true);
     setError("");
     const nextChat = [...chat, { role: "user" as const, content: query.trim() }];
     setChat(nextChat);
@@ -223,6 +226,7 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
       body: JSON.stringify({ botId: currentBot.id, sessionKey, question: currentQuery })
     });
     const payload = await response.json();
+    setChatLoading(false);
     if (!response.ok) {
       setError(payload.error ?? "Chat failed");
       return;
@@ -255,68 +259,69 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
         </div>
       </section>
 
-      <div className="split">
-        <section className="card">
-          <div className="card-inner stack">
-            <h3>Source material</h3>
-            <p>Upload PDFs, text files, DOCX, or markdown files. The system indexes them automatically.</p>
-            <input type="file" multiple onChange={handleUpload} disabled={uploading || currentBot.status === "SUBMITTED"} />
-            <div className="file-list">
-              {documents.map((doc) => (
-                <div className="file-item" key={doc.id}>
-                  <div>
-                    <div>{doc.filename}</div>
-                    <div className="small mono">{doc.mimeType}</div>
-                  </div>
-                  <div className="small">{(doc.sizeBytes / 1024).toFixed(1)} KB</div>
+      <div className="workspace-columns">
+        <div className="stack workspace-side">
+          <section className="card">
+            <div className="card-inner stack">
+              <h3>LLM parameters</h3>
+              <div>
+                <div className="label">Chatbot name</div>
+                <input value={botName} onChange={(event) => setBotName(event.target.value)} maxLength={120} disabled={currentBot.status === "SUBMITTED"} />
+              </div>
+              <div>
+                <div className="label">System prompt</div>
+                <textarea value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} disabled={currentBot.status === "SUBMITTED"} />
+              </div>
+              <div className="panel-grid">
+                <div>
+                  <div className="label">Temperature</div>
+                  <input value={temperature} onChange={(event) => setTemperature(event.target.value)} type="number" min="0" max="2" step="0.1" disabled={currentBot.status === "SUBMITTED"} />
                 </div>
-              ))}
-              {!documents.length ? <p>No files uploaded yet.</p> : null}
+                <div>
+                  <div className="label">Top-p</div>
+                  <input value={topP} onChange={(event) => setTopP(event.target.value)} type="number" min="0" max="1" step="0.05" disabled={currentBot.status === "SUBMITTED"} />
+                </div>
+                <div>
+                  <div className="label">Top-k</div>
+                  <input value={topK} onChange={(event) => setTopK(event.target.value)} type="number" min="1" max="100" step="1" disabled={currentBot.status === "SUBMITTED"} />
+                </div>
+                <div>
+                  <div className="label">Max output tokens</div>
+                  <input value={maxOutputTokens} onChange={(event) => setMaxOutputTokens(event.target.value)} type="number" min="32" max="4096" step="32" disabled={currentBot.status === "SUBMITTED"} />
+                </div>
+              </div>
+              <div className="row">
+                <button onClick={saveBot} disabled={loading || currentBot.status === "SUBMITTED"}>Save settings</button>
+                <button className="secondary" onClick={toggleSubmission} disabled={loading}>
+                  {currentBot.status === "SUBMITTED" ? "Revert submission" : "Submit for grading"}
+                </button>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section className="card">
+          <section className="card">
+            <div className="card-inner stack">
+              <h3>Source material</h3>
+              <p>Upload PDFs, text files, DOCX, or markdown files. The system indexes them automatically.</p>
+              <input type="file" multiple onChange={handleUpload} disabled={uploading || currentBot.status === "SUBMITTED"} />
+              <div className="file-list">
+                {documents.map((doc) => (
+                  <div className="file-item" key={doc.id}>
+                    <div className="file-meta">
+                      <div className="file-name" title={doc.filename}>{doc.filename}</div>
+                      <div className="small mono">{doc.mimeType}</div>
+                    </div>
+                    <div className="small">{(doc.sizeBytes / 1024).toFixed(1)} KB</div>
+                  </div>
+                ))}
+                {!documents.length ? <p>No files uploaded yet.</p> : null}
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section className="card chat workspace-main">
           <div className="card-inner stack">
-            <h3>LLM parameters</h3>
-            <div>
-              <div className="label">Chatbot name</div>
-              <input value={botName} onChange={(event) => setBotName(event.target.value)} maxLength={120} disabled={currentBot.status === "SUBMITTED"} />
-            </div>
-            <div>
-              <div className="label">System prompt</div>
-              <textarea value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} disabled={currentBot.status === "SUBMITTED"} />
-            </div>
-            <div className="panel-grid">
-              <div>
-                <div className="label">Temperature</div>
-                <input value={temperature} onChange={(event) => setTemperature(event.target.value)} type="number" min="0" max="2" step="0.1" disabled={currentBot.status === "SUBMITTED"} />
-              </div>
-              <div>
-                <div className="label">Top-p</div>
-                <input value={topP} onChange={(event) => setTopP(event.target.value)} type="number" min="0" max="1" step="0.05" disabled={currentBot.status === "SUBMITTED"} />
-              </div>
-              <div>
-                <div className="label">Top-k</div>
-                <input value={topK} onChange={(event) => setTopK(event.target.value)} type="number" min="1" max="100" step="1" disabled={currentBot.status === "SUBMITTED"} />
-              </div>
-              <div>
-                <div className="label">Max output tokens</div>
-                <input value={maxOutputTokens} onChange={(event) => setMaxOutputTokens(event.target.value)} type="number" min="32" max="4096" step="32" disabled={currentBot.status === "SUBMITTED"} />
-              </div>
-            </div>
-            <div className="row">
-              <button onClick={saveBot} disabled={loading || currentBot.status === "SUBMITTED"}>Save settings</button>
-              <button className="secondary" onClick={toggleSubmission} disabled={loading}>
-                {currentBot.status === "SUBMITTED" ? "Revert submission" : "Submit for grading"}
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <section className="card chat">
-        <div className="card-inner stack">
           <div className="row">
             <div>
               <div className="kicker">Preview</div>
@@ -332,6 +337,16 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
                 <div>{entry.content}</div>
               </div>
             )) : <p>Ask the bot a question to preview how the chatbot will answer.</p>}
+            {chatLoading ? (
+              <div className="bubble assistant typing-bubble" aria-live="polite" aria-label="Assistant is typing">
+                <div className="role">assistant</div>
+                <div className="typing-dots" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
+            ) : null}
           </div>
           <div className="divider" />
           <div className="row">
@@ -340,11 +355,12 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
                 event.preventDefault();
                 void sendQuestion();
               }
-            }} />
-            <button onClick={sendQuestion}>Send</button>
+            }} disabled={chatLoading} />
+            <button onClick={sendQuestion} disabled={chatLoading}>{chatLoading ? "Thinking..." : "Send"}</button>
           </div>
         </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
