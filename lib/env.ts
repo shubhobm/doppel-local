@@ -48,6 +48,7 @@ const envSchema = z.object({
   GRADER_API_KEY: z.string().default(""),
   OPENAI_API_KEY: z.string().default(""),
   UPLOADS_ENABLED: z.string().default("false").transform((value) => trueValues.has(value.toLowerCase())),
+  UPLOAD_BACKEND: z.enum(["local", "vercel-blob"]).default("local"),
   UPLOAD_DIR: z.string().default("./uploads")
 });
 

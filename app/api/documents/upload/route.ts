@@ -67,50 +67,55 @@ export async function POST(request: NextRequest) {
   const results = [];
 
   for (const file of files) {
-    const { storagePath, buffer } = await saveUploadedFile(bot.id, file);
-    const text = await extractTextFromUpload(file, buffer);
-    const chunks = chunkText(text);
-    const document = await db.sourceDocument.create({
-      data: {
-        botId: bot.id,
-        filename: file.name,
-        storagePath,
-        mimeType: file.type || "text/plain",
-        sizeBytes: file.size,
-        chunkCount: chunks.length,
-        status: "PROCESSING"
-      }
-    });
+    let documentId = "";
 
     try {
+      const { storagePath, buffer } = await saveUploadedFile(bot.id, file);
+      const text = await extractTextFromUpload(file, buffer);
+      const chunks = chunkText(text);
+      const document = await db.sourceDocument.create({
+        data: {
+          botId: bot.id,
+          filename: file.name,
+          storagePath,
+          mimeType: file.type || "text/plain",
+          sizeBytes: file.size,
+          chunkCount: chunks.length,
+          status: "PROCESSING"
+        }
+      });
+      documentId = document.id;
+
       for (let index = 0; index < chunks.length; index += 1) {
         const content = chunks[index];
         const embedding = await embedText(content);
         await db.documentChunk.create({
           data: {
-            documentId: document.id,
+            documentId,
             chunkIndex: index,
             content,
             embedding: embedding ?? undefined,
             metadata: {
               filename: file.name,
               chunkIndex: index,
-              documentId: document.id
+              documentId
             }
           }
         });
       }
 
       await db.sourceDocument.update({
-        where: { id: document.id },
+        where: { id: documentId },
         data: { status: "READY" }
       });
-      results.push(document.id);
+      results.push(documentId);
     } catch (error) {
-      await db.sourceDocument.update({
-        where: { id: document.id },
-        data: { status: "FAILED" }
-      });
+      if (documentId) {
+        await db.sourceDocument.update({
+          where: { id: documentId },
+          data: { status: "FAILED" }
+        });
+      }
       return NextResponse.json({ error: "Could not process uploaded file." }, { status: 500 });
     }
   }

@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
+import { put } from "@vercel/blob";
 import mammoth from "mammoth";
 import pdfParse from "pdf-parse";
 import { env } from "./env";
@@ -12,12 +13,31 @@ export async function ensureUploadDir(botId: string) {
 }
 
 export async function saveUploadedFile(botId: string, file: File) {
-  const dir = await ensureUploadDir(botId);
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const fileName = `${Date.now()}-${crypto.randomUUID()}-${safeName}`;
-  const storagePath = path.join(dir, fileName);
   const buffer = Buffer.from(await file.arrayBuffer());
-  await fs.writeFile(storagePath, buffer);
+
+  let storagePath = "";
+  if (env.UPLOAD_BACKEND === "vercel-blob") {
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) {
+      throw new Error("BLOB_READ_WRITE_TOKEN is required when UPLOAD_BACKEND=vercel-blob");
+    }
+
+    const blobPath = `uploads/${botId}/${fileName}`;
+    const blob = await put(blobPath, buffer, {
+      access: "public",
+      addRandomSuffix: false,
+      contentType: file.type || "application/octet-stream",
+      token
+    });
+    storagePath = blob.url;
+  } else {
+    const dir = await ensureUploadDir(botId);
+    storagePath = path.join(dir, fileName);
+    await fs.writeFile(storagePath, buffer);
+  }
+
   return { storagePath, buffer, fileName };
 }
 

@@ -30,6 +30,11 @@ Upload feature flag:
 - Default is `false` (system-prompt-only bots).
 - Set `UPLOADS_ENABLED=true` to enable uploads.
 
+Upload storage backend:
+- `UPLOAD_BACKEND=local` (default) stores files on local disk at `UPLOAD_DIR`.
+- `UPLOAD_BACKEND=vercel-blob` stores files in Vercel Blob.
+- When using `vercel-blob`, set `BLOB_READ_WRITE_TOKEN` in your environment.
+
 SMTP variables are not required for the static login flow.
 
 ## Development
