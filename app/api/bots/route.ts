@@ -28,11 +28,12 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const name = typeof body.name === "string" && body.name.trim() ? body.name.trim() : "New chatbot";
+  const name = typeof body.name === "string" && body.name.trim() ? body.name.trim().slice(0, 120) : "New chatbot";
 
   const bot = await db.studentBot.create({
     data: {
       userId: session.user.id,
+      name,
       systemPrompt: `You are a study assistant for ${name}.`,
       configVersion: 1
     },

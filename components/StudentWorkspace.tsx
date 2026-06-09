@@ -13,6 +13,7 @@ type DocumentRecord = {
 
 type BotRecord = {
   id: string;
+  name: string;
   status: string;
   systemPrompt: string;
   temperature: number;
@@ -39,6 +40,7 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
   const [allBots, setAllBots] = useState(bots);
   const [currentBotId, setCurrentBotId] = useState(activeBotId);
   const [systemPrompt, setSystemPrompt] = useState("");
+  const [botName, setBotName] = useState("");
   const [temperature, setTemperature] = useState("0.2");
   const [topP, setTopP] = useState("1");
   const [topK, setTopK] = useState("20");
@@ -84,6 +86,7 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
     }
 
     setSystemPrompt(currentBot.systemPrompt);
+    setBotName(currentBot.name);
     setTemperature(String(currentBot.temperature));
     setTopP(String(currentBot.topP));
     setTopK(String(currentBot.topK));
@@ -115,10 +118,18 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
     setLoading(true);
     setError("");
     setMessage("");
+    const normalizedBotName = botName.trim();
+    if (!normalizedBotName) {
+      setLoading(false);
+      setError("Chatbot name cannot be empty.");
+      return;
+    }
+
     const response = await fetch(`/api/bots/${currentBot.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        name: normalizedBotName,
         systemPrompt,
         temperature: Number(temperature),
         topP: Number(topP),
@@ -268,6 +279,10 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes }: Props) {
         <section className="card">
           <div className="card-inner stack">
             <h3>LLM parameters</h3>
+            <div>
+              <div className="label">Chatbot name</div>
+              <input value={botName} onChange={(event) => setBotName(event.target.value)} maxLength={120} disabled={currentBot.status === "SUBMITTED"} />
+            </div>
             <div>
               <div className="label">System prompt</div>
               <textarea value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} disabled={currentBot.status === "SUBMITTED"} />

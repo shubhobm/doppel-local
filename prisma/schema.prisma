@@ -53,6 +53,7 @@ model StudentBot {
   id               String          @id @default(cuid())
   userId           String
   examId           String          @default("midterm_t4_2026")
+  name             String          @default("New chatbot")
   status           BotStatus       @default(DRAFT)
   systemPrompt     String          @default("")
   temperature     Float           @default(0.2)

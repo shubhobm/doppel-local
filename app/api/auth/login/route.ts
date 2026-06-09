@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { sessionCookieOptions, signSessionToken } from "@/lib/auth";
+import { comparePassword, hashPassword, sessionCookieOptions, signSessionToken } from "@/lib/auth";
 import { SESSION_COOKIE, STATIC_PASSWORD, STATIC_USERNAME } from "@/lib/limits";
 
 const bodySchema = z.object({
@@ -15,15 +15,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Enter valid login credentials." }, { status: 400 });
   }
 
-  if (parsed.data.username !== STATIC_USERNAME || parsed.data.password !== STATIC_PASSWORD) {
+  const normalizedUsername = parsed.data.username.trim().toLowerCase();
+  if (normalizedUsername !== STATIC_USERNAME) {
     return NextResponse.json({ error: "Invalid username or password." }, { status: 401 });
   }
 
+  const email = `${STATIC_USERNAME}@iimb.ac.in`;
+
   const user = await db.user.upsert({
-    where: { email: `${STATIC_USERNAME}@iimb.ac.in` },
+    where: { email },
     update: { role: "STUDENT" },
-    create: { email: `${STATIC_USERNAME}@iimb.ac.in`, role: "STUDENT" }
+    create: { email, role: "STUDENT" }
   });
+
+  let authenticated = false;
+  if (user.passwordHash) {
+    authenticated = await comparePassword(parsed.data.password, user.passwordHash);
+  } else if (parsed.data.password === STATIC_PASSWORD) {
+    authenticated = true;
+    await db.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await hashPassword(STATIC_PASSWORD) }
+    });
+  }
+
+  if (!authenticated) {
+    return NextResponse.json({ error: "Invalid username or password." }, { status: 401 });
+  }
 
   const sessionToken = await signSessionToken({
     userId: user.id,

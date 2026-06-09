@@ -39,6 +39,17 @@ a {
   text-decoration: none;
 }
 
+.text-link {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.text-link:hover {
+  color: var(--accent-strong);
+}
+
 button,
 input,
 textarea,

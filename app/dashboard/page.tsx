@@ -68,15 +68,16 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <p>
             Doppel lets you manage multiple chatbots, configure prompts and parameters, upload course material, and submit each chatbot for grading.
           </p>
+          <div>
+            <a className="text-link" href="/forgot-password">Forgot password</a>
+          </div>
         </div>
       </section>
       <BotDashboardTable
-        bots={bots.map((candidate, index) => ({
+        bots={bots.map((candidate) => ({
           id: candidate.id,
           status: candidate.status,
-          displayName: candidate.systemPrompt?.trim()
-            ? candidate.systemPrompt.slice(0, 44)
-            : `Chatbot ${index + 1}`,
+          name: candidate.name,
           updatedAt: candidate.updatedAt.toISOString()
         }))}
         activeBotId={activeBot.id}
@@ -84,6 +85,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <StudentWorkspace
         bots={bots.map((candidate) => ({
           id: candidate.id,
+          name: candidate.name,
           status: candidate.status,
           systemPrompt: candidate.systemPrompt,
           temperature: candidate.temperature,

@@ -6,7 +6,7 @@ import { useState } from "react";
 type BotSummary = {
   id: string;
   status: string;
-  displayName: string;
+  name: string;
   updatedAt: string;
 };
 
@@ -83,7 +83,7 @@ export function BotDashboardTable({ bots, activeBotId }: Props) {
                   className={`bots-row ${bot.id === activeBotId ? "active" : ""}`}
                   onClick={() => goToBot(bot.id)}
                 >
-                  <td>{bot.displayName}</td>
+                  <td>{bot.name}</td>
                   <td>
                     <span className={`status-pill ${bot.status === "SUBMITTED" ? "submitted" : "draft"}`}>
                       {bot.status}

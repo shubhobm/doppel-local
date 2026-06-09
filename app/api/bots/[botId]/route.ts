@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { getSessionUserFromRequest } from "@/lib/request";
 
 const updateSchema = z.object({
+  name: z.string().trim().min(1).max(120),
   systemPrompt: z.string().max(12000),
   temperature: z.number().min(0).max(2),
   topP: z.number().min(0).max(1),
@@ -57,6 +58,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const updated = await db.studentBot.update({
     where: { id: bot.id },
     data: {
+      name: parsed.data.name,
       systemPrompt: parsed.data.systemPrompt,
       temperature: parsed.data.temperature,
       topP: parsed.data.topP,

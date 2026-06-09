@@ -102,6 +102,7 @@ async function main() {
     bot = await prisma.studentBot.create({
       data: {
         userId: user.id,
+        name: "Seeded Demo Chatbot",
         systemPrompt: DEMO_MARKER,
         temperature: 0.2,
         topP: 1,

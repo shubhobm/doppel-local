@@ -43,7 +43,7 @@ export default function LoginPage() {
             <div className="kicker">IIM Bangalore</div>
             <h1>Sign in to Doppel chatbot studio.</h1>
             <p>
-              Use the fixed username and password to access the exam workspace, upload source material, tune the bot,
+              Sign in to access the exam workspace, upload source material, tune chatbots,
               and preview answers before submission.
             </p>
             <div className="badge">Frozen model: gpt-5-nano</div>
@@ -68,7 +68,7 @@ export default function LoginPage() {
                 {loading ? "Signing in..." : "Sign in"}
               </button>
             </form>
-            <div className="notice">Default credentials: smajumdar / admin1234</div>
+            <div className="notice">Username remains fixed to your exam account.</div>
           </div>
         </section>
       </div>
