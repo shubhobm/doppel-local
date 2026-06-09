@@ -20,12 +20,17 @@ Copy `.env.example` to `.env` and set:
 - `GRADER_API_KEY`
 - `OPENAI_API_KEY`
 
+OpenAI key resolution:
+- Deployed environments: use runtime `OPENAI_API_KEY` (for example, injected from your platform secret settings).
+- Local development: if `OPENAI_API_KEY` is not present in process env, the app falls back to `.env.local`.
+
 SMTP variables are not required for the static login flow.
 
 ## Development
 1. Install dependencies.
 2. Run Prisma generate and migrations.
-3. Start the app with `npm run dev`.
+3. Put your local OpenAI key in `.env.local` as `OPENAI_API_KEY`.
+4. Start the app with `npm run dev`.
 
 ## Local Docker deployment
 1. Copy `.env.example` to `.env.local` if you want to run outside Docker.
