@@ -252,9 +252,6 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
             <div className="badge">Config v{currentBot.configVersion}</div>
             <div className="badge">Model: gpt-5-nano</div>
           </div>
-          <div className="notice">
-            Upload limit remaining: {(remainingBytes / (1024 * 1024)).toFixed(1)} MB. Files used: {documents.length}/100.
-          </div>
           {message ? <div className="success">{message}</div> : null}
           {error ? <div className="error">{error}</div> : null}
         </div>
@@ -304,6 +301,9 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
           <section className={uploadsEnabled ? "card" : "card disabled-panel"}>
             <div className="card-inner stack">
               <h3>Source material</h3>
+              <div className="notice">
+                Upload limit remaining: {(remainingBytes / (1024 * 1024)).toFixed(1)} MB. Files used: {documents.length}/100.
+              </div>
               <p>
                 {uploadsEnabled
                   ? "Upload PDFs, text files, DOCX, or markdown files. The system indexes them automatically."
