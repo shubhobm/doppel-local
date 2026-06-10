@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 import { getSessionUserFromRequest } from "@/lib/request";
+import { normalizeUsername } from "@/lib/users";
 
 const createUserSchema = z.object({
   username: z.string().trim().min(1).max(120),
@@ -16,19 +17,6 @@ function unauthorized() {
 
 function forbidden() {
   return NextResponse.json({ error: "Admin access required." }, { status: 403 });
-}
-
-function normalizeEmailFromUsername(username: string) {
-  const normalized = username.trim().toLowerCase();
-  if (!normalized) {
-    return "";
-  }
-
-  if (normalized.includes("@")) {
-    return "";
-  }
-
-  return normalized;
 }
 
 export async function GET(request: NextRequest) {
@@ -70,7 +58,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { username, password, role } = parsed.data;
-  const email = normalizeEmailFromUsername(username);
+  const email = normalizeUsername(username);
   if (!email) {
     return NextResponse.json({ error: "Enter a valid username only (no @)." }, { status: 400 });
   }
