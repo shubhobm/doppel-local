@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 
 type DocumentRecord = {
@@ -39,6 +40,7 @@ type ChatEntry = {
 };
 
 export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled }: Props) {
+  const router = useRouter();
   const [allBots, setAllBots] = useState(bots);
   const [currentBotId, setCurrentBotId] = useState(activeBotId);
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -151,6 +153,7 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
     setAllBots((existing) => existing.map((bot) => (bot.id === currentBot.id ? { ...bot, ...payload.bot } : bot)));
     setMessage("Settings saved.");
     await refreshCurrentBot(currentBot.id);
+    router.refresh();
   }
 
   async function toggleSubmission() {
@@ -210,6 +213,7 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
 
     setMessage("Source material uploaded.");
     await refreshCurrentBot(currentBot.id);
+    router.refresh();
   }
 
   async function sendQuestion() {
