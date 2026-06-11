@@ -111,6 +111,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               : []
           }
           canManageBots={canManageSelectedOwner}
+          includeOwnerInBotLinks={!canManageSelectedOwner}
         />
       ) : null}
       {activeTab === "users" && user.role === "ADMIN" ? (

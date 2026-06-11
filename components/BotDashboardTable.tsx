@@ -24,6 +24,7 @@ type Props = {
   selectedOwnerId?: string;
   showOwnerSelector?: boolean;
   canManageBots?: boolean;
+  includeOwnerInBotLinks?: boolean;
 };
 
 export function BotDashboardTable({
@@ -32,7 +33,8 @@ export function BotDashboardTable({
   ownerOptions = [],
   selectedOwnerId = "",
   showOwnerSelector = false,
-  canManageBots = true
+  canManageBots = true,
+  includeOwnerInBotLinks = false
 }: Props) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
@@ -40,10 +42,12 @@ export function BotDashboardTable({
   const [error, setError] = useState("");
 
   function goToBot(botId: string) {
-    if (!canManageBots) {
-      return;
+    const params = new URLSearchParams();
+    params.set("bot", botId);
+    if (includeOwnerInBotLinks && selectedOwnerId) {
+      params.set("owner", selectedOwnerId);
     }
-    router.push(`/workspace?bot=${botId}`);
+    router.push(`/workspace?${params.toString()}`);
     router.refresh();
   }
 
@@ -150,12 +154,8 @@ export function BotDashboardTable({
               {bots.map((bot) => (
                 <tr
                   key={bot.id}
-                  className={`${canManageBots ? "bots-row" : ""} ${bot.id === activeBotId ? "active" : ""}`.trim()}
-                  onClick={() => {
-                    if (canManageBots) {
-                      goToBot(bot.id);
-                    }
-                  }}
+                  className={`bots-row ${bot.id === activeBotId ? "active" : ""}`}
+                  onClick={() => goToBot(bot.id)}
                 >
                   <td>{bot.name}</td>
                   <td>

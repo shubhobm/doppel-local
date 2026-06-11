@@ -32,6 +32,8 @@ type Props = {
   activeBotId: string;
   totalBytes: number;
   uploadsEnabled: boolean;
+  readOnly?: boolean;
+  useAdminQueryEndpoint?: boolean;
 };
 
 type ChatEntry = {
@@ -39,7 +41,14 @@ type ChatEntry = {
   content: string;
 };
 
-export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled }: Props) {
+export function StudentWorkspace({
+  bots,
+  activeBotId,
+  totalBytes,
+  uploadsEnabled,
+  readOnly = false,
+  useAdminQueryEndpoint = false
+}: Props) {
   const router = useRouter();
   const [allBots, setAllBots] = useState(bots);
   const [currentBotId, setCurrentBotId] = useState(activeBotId);
@@ -248,10 +257,15 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
     const currentQuery = query.trim();
     setQuery("");
 
-    const response = await fetch("/api/chat", {
+    const endpoint = useAdminQueryEndpoint ? "/api/admin/bots/query" : "/api/chat";
+    const body = useAdminQueryEndpoint
+      ? JSON.stringify({ botId: currentBot.id, question: currentQuery, sessionKey })
+      : JSON.stringify({ botId: currentBot.id, sessionKey, question: currentQuery });
+
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ botId: currentBot.id, sessionKey, question: currentQuery })
+      body
     });
     const payload = await response.json();
     setChatLoading(false);
@@ -267,6 +281,8 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
     return null;
   }
 
+  const editDisabled = readOnly || currentBot.status === "SUBMITTED";
+
   return (
     <div className="stack">
       <section className="card">
@@ -281,6 +297,7 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
           </div>
           {message ? <div className="success">{message}</div> : null}
           {error ? <div className="error">{error}</div> : null}
+          {readOnly ? <div className="notice">Read-only admin view: you can use chat, but cannot edit settings or files.</div> : null}
         </div>
       </section>
 
@@ -292,33 +309,33 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
               <p className="small"><em>Click Save Settings nelow to reflect parameter changes in the right pane.</em></p>
               <div>
                 <div className="label">Chatbot name</div>
-                <input value={botName} onChange={(event) => setBotName(event.target.value)} maxLength={120} disabled={currentBot.status === "SUBMITTED"} />
+                <input value={botName} onChange={(event) => setBotName(event.target.value)} maxLength={120} disabled={editDisabled} />
               </div>
               <div>
                 <div className="label">System prompt</div>
-                <textarea value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} disabled={currentBot.status === "SUBMITTED"} />
+                <textarea value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} disabled={editDisabled} />
               </div>
               <div className="panel-grid">
                 <div>
                   <div className="label">Temperature</div>
-                  <input value={temperature} onChange={(event) => setTemperature(event.target.value)} type="number" min="0" max="2" step="0.1" disabled={currentBot.status === "SUBMITTED"} />
+                  <input value={temperature} onChange={(event) => setTemperature(event.target.value)} type="number" min="0" max="2" step="0.1" disabled={editDisabled} />
                 </div>
                 <div>
                   <div className="label">Top-p</div>
-                  <input value={topP} onChange={(event) => setTopP(event.target.value)} type="number" min="0" max="1" step="0.05" disabled={currentBot.status === "SUBMITTED"} />
+                  <input value={topP} onChange={(event) => setTopP(event.target.value)} type="number" min="0" max="1" step="0.05" disabled={editDisabled} />
                 </div>
                 <div>
                   <div className="label">Top-k</div>
-                  <input value={topK} onChange={(event) => setTopK(event.target.value)} type="number" min="1" max="100" step="1" disabled={currentBot.status === "SUBMITTED"} />
+                  <input value={topK} onChange={(event) => setTopK(event.target.value)} type="number" min="1" max="100" step="1" disabled={editDisabled} />
                 </div>
                 <div>
                   <div className="label">Max output tokens</div>
-                  <input value={maxOutputTokens} onChange={(event) => setMaxOutputTokens(event.target.value)} type="number" min="32" max="4096" step="32" disabled={currentBot.status === "SUBMITTED"} />
+                  <input value={maxOutputTokens} onChange={(event) => setMaxOutputTokens(event.target.value)} type="number" min="32" max="4096" step="32" disabled={editDisabled} />
                 </div>
               </div>
               <div className="row">
-                <button onClick={saveBot} disabled={loading || currentBot.status === "SUBMITTED"}>Save settings</button>
-                <button className="secondary" onClick={toggleSubmission} disabled={loading || !uploadsEnabled}>
+                <button onClick={saveBot} disabled={loading || editDisabled}>Save settings</button>
+                <button className="secondary" onClick={toggleSubmission} disabled={loading || !uploadsEnabled || readOnly}>
                   {currentBot.status === "SUBMITTED" ? "Revert submission" : "Submit for grading"}
                 </button>
               </div>
@@ -336,7 +353,7 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
                   ? "Upload PDFs, text files, DOCX, or markdown files. The system indexes them automatically."
                   : "Source uploads are disabled. This chatbot currently runs in system-prompt-only mode."}
               </p>
-              <input type="file" multiple onChange={handleUpload} disabled={!uploadsEnabled || uploading || currentBot.status === "SUBMITTED"} />
+              <input type="file" multiple onChange={handleUpload} disabled={!uploadsEnabled || uploading || editDisabled} />
               <div className="file-list">
                 {documents.map((doc) => (
                   <div className="file-item" key={doc.id}>
