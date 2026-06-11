@@ -71,7 +71,14 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const results = [];
+  const results: Array<{
+    id: string;
+    filename: string;
+    mimeType: string;
+    sizeBytes: number;
+    status: string;
+    chunkCount: number;
+  }> = [];
 
   for (const file of files) {
     let documentId = "";
@@ -115,7 +122,15 @@ export async function POST(request: NextRequest) {
         where: { id: documentId },
         data: { status: "READY" }
       });
-      results.push(documentId);
+
+      results.push({
+        id: documentId,
+        filename: file.name,
+        mimeType: file.type || "text/plain",
+        sizeBytes: file.size,
+        status: "READY",
+        chunkCount: chunks.length
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error("Upload processing failed", {
@@ -145,5 +160,5 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, uploaded: results.length });
+  return NextResponse.json({ ok: true, uploaded: results.length, documents: results });
 }

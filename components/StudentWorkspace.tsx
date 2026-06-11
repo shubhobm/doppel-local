@@ -211,6 +211,27 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
       return;
     }
 
+    const uploadedDocs = Array.isArray(payload.documents) ? (payload.documents as DocumentRecord[]) : [];
+    if (uploadedDocs.length) {
+      setAllBots((existing) =>
+        existing.map((bot) => {
+          if (bot.id !== currentBot.id) {
+            return bot;
+          }
+
+          const byId = new Map(bot.documents.map((doc) => [doc.id, doc]));
+          for (const doc of uploadedDocs) {
+            byId.set(doc.id, doc);
+          }
+
+          return {
+            ...bot,
+            documents: Array.from(byId.values())
+          };
+        })
+      );
+    }
+
     setMessage("Source material uploaded.");
     await refreshCurrentBot(currentBot.id);
     router.refresh();
