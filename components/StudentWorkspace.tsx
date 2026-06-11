@@ -102,7 +102,9 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
   const remainingBytes = useMemo(() => Math.max(0, 100 * 1024 * 1024 - totalBytes), [totalBytes]);
 
   async function refreshCurrentBot(botId: string) {
-    const response = await fetch(`/api/bots/${botId}`);
+    const response = await fetch(`/api/bots/${botId}?ts=${Date.now()}`, {
+      cache: "no-store"
+    });
     if (!response.ok) {
       return;
     }
