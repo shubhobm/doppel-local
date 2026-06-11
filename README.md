@@ -27,7 +27,7 @@ OpenAI key resolution:
 
 Upload feature flag:
 - `UPLOADS_ENABLED` controls whether source document upload/retrieval is enabled.
-- Default is `false` (system-prompt-only bots).
+- Default is `true`.
 - Set `UPLOADS_ENABLED=true` to enable uploads.
 
 Upload storage backend:
