@@ -24,9 +24,11 @@ export async function saveUploadedFile(botId: string, file: File) {
       throw new Error("BLOB_READ_WRITE_TOKEN is required when UPLOAD_BACKEND=vercel-blob");
     }
 
+    const configuredAccess = process.env.BLOB_ACCESS?.toLowerCase() === "public" ? "public" : "private";
+
     const blobPath = `uploads/${botId}/${fileName}`;
     const blob = await put(blobPath, buffer, {
-      access: "public",
+      access: configuredAccess,
       addRandomSuffix: false,
       contentType: file.type || "application/octet-stream",
       token
