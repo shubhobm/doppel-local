@@ -6,7 +6,7 @@ import { LogoutButton } from "@/components/LogoutButton";
 import { ensureDemoBotForUser } from "@/lib/demoBot";
 import { AdminUserManager } from "@/components/AdminUserManager";
 
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ tab?: string; owner?: string }> }) {
   const session = await readSessionFromCookies();
   if (!session) {
     redirect("/login");
@@ -28,21 +28,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   }
   const displayUsername = user.email.split("@")[0] || user.email;
 
-  let bots = await db.studentBot.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "asc" },
-    include: {
-      documents: {
-        orderBy: { createdAt: "desc" }
-      }
-    }
-  });
-
-  if (!bots.length) {
-    const created = await ensureDemoBotForUser(user.id);
-    bots = [created];
-  }
-
   const managedUsers =
     user.role === "ADMIN"
       ? await db.user.findMany({
@@ -55,6 +40,28 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           }
         })
       : [];
+
+  const selectedOwnerId =
+    user.role === "ADMIN" && resolvedSearchParams.owner && managedUsers.some((candidate) => candidate.id === resolvedSearchParams.owner)
+      ? resolvedSearchParams.owner
+      : user.id;
+
+  let bots = await db.studentBot.findMany({
+    where: { userId: selectedOwnerId },
+    orderBy: { createdAt: "asc" },
+    include: {
+      documents: {
+        orderBy: { createdAt: "desc" }
+      }
+    }
+  });
+
+  if (!bots.length && selectedOwnerId === user.id) {
+    const created = await ensureDemoBotForUser(user.id);
+    bots = [created];
+  }
+
+  const canManageSelectedOwner = selectedOwnerId === user.id;
 
   return (
     <main className="shell stack">
@@ -92,6 +99,18 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             updatedAt: candidate.updatedAt.toISOString()
           }))}
           activeBotId=""
+          showOwnerSelector={user.role === "ADMIN"}
+          selectedOwnerId={selectedOwnerId}
+          ownerOptions={
+            user.role === "ADMIN"
+              ? managedUsers.map((candidate) => ({
+                  id: candidate.id,
+                  username: candidate.email,
+                  role: candidate.role
+                }))
+              : []
+          }
+          canManageBots={canManageSelectedOwner}
         />
       ) : null}
       {activeTab === "users" && user.role === "ADMIN" ? (
