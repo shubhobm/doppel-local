@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
-import { put } from "@vercel/blob";
+import { del, put } from "@vercel/blob";
 import mammoth from "mammoth";
 import pdfParse from "pdf-parse";
 import { env } from "./env";
@@ -41,6 +41,24 @@ export async function saveUploadedFile(botId: string, file: File) {
   }
 
   return { storagePath, buffer, fileName };
+}
+
+export async function deleteStoredFile(storagePath: string) {
+  if (!storagePath) {
+    return;
+  }
+
+  if (env.UPLOAD_BACKEND === "vercel-blob") {
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) {
+      throw new Error("BLOB_READ_WRITE_TOKEN is required when UPLOAD_BACKEND=vercel-blob");
+    }
+
+    await del(storagePath, { token });
+    return;
+  }
+
+  await fs.unlink(storagePath);
 }
 
 function cleanText(text: string) {

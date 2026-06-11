@@ -5,7 +5,6 @@ import { env } from "@/lib/env";
 import { getSessionUserFromRequest } from "@/lib/request";
 import { ALLOWED_MIME_TYPES, MAX_FILES, MAX_TOTAL_UPLOAD_BYTES } from "@/lib/limits";
 import { chunkText, extractTextFromUpload, saveUploadedFile } from "@/lib/files";
-import { embedText } from "@/lib/rag";
 
 function mimeAllowed(file: File) {
   if (ALLOWED_MIME_TYPES.has(file.type)) {
@@ -102,13 +101,11 @@ export async function POST(request: NextRequest) {
 
       for (let index = 0; index < chunks.length; index += 1) {
         const content = chunks[index];
-        const embedding = await embedText(content);
         await db.documentChunk.create({
           data: {
             documentId,
             chunkIndex: index,
             content,
-            embedding: embedding ?? undefined,
             metadata: {
               filename: file.name,
               chunkIndex: index,

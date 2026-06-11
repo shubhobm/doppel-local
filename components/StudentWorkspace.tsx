@@ -55,6 +55,9 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
   const [chat, setChat] = useState<ChatEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deletingDocumentId, setDeletingDocumentId] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [chatLoading, setChatLoading] = useState(false);
   const [sessionKey, setSessionKey] = useState("preview");
 
@@ -99,9 +102,48 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
     setChat([]);
     setMessage("");
     setError("");
-  }, [currentBot]);
+  }, [currentBotId]);
 
   const remainingBytes = useMemo(() => Math.max(0, 100 * 1024 * 1024 - totalBytes), [totalBytes]);
+
+  function upsertDocumentForCurrentBot(document: DocumentRecord) {
+    setAllBots((existing) =>
+      existing.map((bot) => {
+        if (bot.id !== currentBotId) {
+          return bot;
+        }
+
+        const byId = new Map(bot.documents.map((doc) => [doc.id, doc]));
+        byId.set(document.id, document);
+        return {
+          ...bot,
+          documents: Array.from(byId.values())
+        };
+      })
+    );
+  }
+
+  function removeDocumentForCurrentBot(documentId: string) {
+    setAllBots((existing) =>
+      existing.map((bot) => {
+        if (bot.id !== currentBotId) {
+          return bot;
+        }
+
+        return {
+          ...bot,
+          documents: bot.documents.filter((doc) => doc.id !== documentId)
+        };
+      })
+    );
+  }
+
+  function resetChatSession() {
+    const nextSession = crypto.randomUUID();
+    window.localStorage.setItem(`bot-session-${currentBotId}`, nextSession);
+    setSessionKey(nextSession);
+    setChat([]);
+  }
 
   async function refreshCurrentBot(botId: string) {
     const response = await fetch(`/api/bots/${botId}?ts=${Date.now()}`, {
@@ -151,7 +193,8 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
       return;
     }
     setAllBots((existing) => existing.map((bot) => (bot.id === currentBot.id ? { ...bot, ...payload.bot } : bot)));
-    setMessage("Settings saved.");
+    setMessage("Settings saved. Chat session reset.");
+    resetChatSession();
     await refreshCurrentBot(currentBot.id);
     router.refresh();
   }
@@ -181,12 +224,17 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
     await refreshCurrentBot(currentBot.id);
   }
 
-  async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
+  function handleFileSelection(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    setPendingFiles(files);
+  }
+
+  async function handleUpload() {
     if (!currentBot) {
       return;
     }
 
-    const files = Array.from(event.target.files ?? []);
+    const files = pendingFiles;
     if (!files.length) {
       return;
     }
@@ -195,46 +243,150 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
     setError("");
     setMessage("");
 
-    const formData = new FormData();
-    formData.append("botId", currentBot.id);
-    files.forEach((file) => formData.append("files", file));
-
-    const response = await fetch("/api/documents/upload", {
-      method: "POST",
-      body: formData
+    const tempIdByFileKey = new Map<string, string>();
+    files.forEach((file, index) => {
+      const tempId = `temp-${Date.now()}-${index}`;
+      const key = `${file.name}-${file.size}-${index}`;
+      tempIdByFileKey.set(key, tempId);
+      upsertDocumentForCurrentBot({
+        id: tempId,
+        filename: file.name,
+        mimeType: file.type || "text/plain",
+        sizeBytes: file.size,
+        status: "UPLOADING",
+        chunkCount: 0
+      });
     });
-    const payload = await response.json();
-    setUploading(false);
 
-    if (!response.ok) {
-      setError(payload.error ?? "Upload failed");
+    try {
+      const failedFiles: string[] = [];
+      let uploadedCount = 0;
+
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        const key = `${file.name}-${file.size}-${index}`;
+        const tempId = tempIdByFileKey.get(key) || "";
+
+        try {
+          const formData = new FormData();
+          formData.append("botId", currentBot.id);
+          formData.append("files", file);
+
+          const response = await Promise.race([
+            fetch("/api/documents/upload", {
+              method: "POST",
+              body: formData
+            }),
+            new Promise<Response>((_, reject) => {
+              setTimeout(() => reject(new Error("UPLOAD_TIMEOUT")), 120000);
+            })
+          ]);
+
+          const payload = await response.json().catch(() => ({}));
+          const docs = Array.isArray(payload.documents) ? (payload.documents as DocumentRecord[]) : [];
+          const uploadedDoc = docs[0];
+
+          if (!response.ok || !uploadedDoc) {
+            failedFiles.push(file.name);
+            if (tempId) {
+              upsertDocumentForCurrentBot({
+                id: tempId,
+                filename: file.name,
+                mimeType: file.type || "text/plain",
+                sizeBytes: file.size,
+                status: "FAILED",
+                chunkCount: 0
+              });
+            }
+            continue;
+          }
+
+          uploadedCount += 1;
+          if (tempId) {
+            removeDocumentForCurrentBot(tempId);
+          }
+          upsertDocumentForCurrentBot(uploadedDoc);
+        } catch {
+          failedFiles.push(file.name);
+          if (tempId) {
+            upsertDocumentForCurrentBot({
+              id: tempId,
+              filename: file.name,
+              mimeType: file.type || "text/plain",
+              sizeBytes: file.size,
+              status: "FAILED",
+              chunkCount: 0
+            });
+          }
+        }
+      }
+
+      if (!uploadedCount) {
+        setError("Upload failed");
+        return;
+      }
+
+      if (failedFiles.length) {
+        setError(`Some files failed to upload: ${failedFiles.join(", ")}`);
+      }
+      setMessage(`${uploadedCount} file(s) uploaded. Chat session reset.`);
+      resetChatSession();
+    } finally {
+      setUploading(false);
+      setPendingFiles([]);
+      setFileInputKey((value) => value + 1);
+    }
+
+    // Keep optimistic document list immediately after upload; avoid stale follow-up reads
+    // that can temporarily hide newly uploaded files on Vercel.
+  }
+
+  async function deleteDocument(documentId: string) {
+    if (!currentBot || deletingDocumentId) {
       return;
     }
 
-    const uploadedDocs = Array.isArray(payload.documents) ? (payload.documents as DocumentRecord[]) : [];
-    if (uploadedDocs.length) {
+    const confirmed = window.confirm("Delete this uploaded document? This cannot be undone.");
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingDocumentId(documentId);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/documents/${documentId}`, {
+        method: "DELETE"
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setError(payload.error ?? "Could not delete document");
+        return;
+      }
+
       setAllBots((existing) =>
         existing.map((bot) => {
           if (bot.id !== currentBot.id) {
             return bot;
           }
 
-          const byId = new Map(bot.documents.map((doc) => [doc.id, doc]));
-          for (const doc of uploadedDocs) {
-            byId.set(doc.id, doc);
-          }
-
           return {
             ...bot,
-            documents: Array.from(byId.values())
+            documents: bot.documents.filter((doc) => doc.id !== documentId)
           };
         })
       );
+      setMessage("Document deleted. Chat session reset.");
+      resetChatSession();
+      await refreshCurrentBot(currentBot.id);
+      router.refresh();
+    } catch {
+      setError("Could not delete document");
+    } finally {
+      setDeletingDocumentId("");
     }
-
-    setMessage("Source material uploaded.");
-    await refreshCurrentBot(currentBot.id);
-    router.refresh();
   }
 
   async function sendQuestion() {
@@ -275,9 +427,8 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
             <div>
               <div className="kicker">Workspace</div>
               <h2>Student chatbot configuration</h2>
+              <p className="small"><em>Select LLM parameters, upload source documents, then click Save Settings to reflect the changes in the chat window.</em></p>
             </div>
-            <div className="badge">Config v{currentBot.configVersion}</div>
-            <div className="badge">Model: gpt-5-nano</div>
           </div>
           {message ? <div className="success">{message}</div> : null}
           {error ? <div className="error">{error}</div> : null}
@@ -289,7 +440,6 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
           <section className="card">
             <div className="card-inner stack">
               <h3>LLM parameters</h3>
-              <p className="small"><em>Click Save Settings nelow to reflect parameter changes in the right pane.</em></p>
               <div>
                 <div className="label">Chatbot name</div>
                 <input value={botName} onChange={(event) => setBotName(event.target.value)} maxLength={120} disabled={currentBot.status === "SUBMITTED"} />
@@ -316,17 +466,9 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
                   <input value={maxOutputTokens} onChange={(event) => setMaxOutputTokens(event.target.value)} type="number" min="32" max="4096" step="32" disabled={currentBot.status === "SUBMITTED"} />
                 </div>
               </div>
-              <div className="row">
-                <button onClick={saveBot} disabled={loading || currentBot.status === "SUBMITTED"}>Save settings</button>
-                <button className="secondary" onClick={toggleSubmission} disabled={loading || !uploadsEnabled}>
-                  {currentBot.status === "SUBMITTED" ? "Revert submission" : "Submit for grading"}
-                </button>
-              </div>
-            </div>
-          </section>
+              <div className="divider" />
 
-          <section className={uploadsEnabled ? "card" : "card disabled-panel"}>
-            <div className="card-inner stack">
+              <div className={uploadsEnabled ? "stack" : "stack disabled-panel"}>
               <h3>Source material</h3>
               <div className="notice">
                 Upload limit remaining: {(remainingBytes / (1024 * 1024)).toFixed(1)} MB. Files used: {documents.length}/100.
@@ -336,18 +478,68 @@ export function StudentWorkspace({ bots, activeBotId, totalBytes, uploadsEnabled
                   ? "Upload PDFs, text files, DOCX, or markdown files. The system indexes them automatically."
                   : "Source uploads are disabled. This chatbot currently runs in system-prompt-only mode."}
               </p>
-              <input type="file" multiple onChange={handleUpload} disabled={!uploadsEnabled || uploading || currentBot.status === "SUBMITTED"} />
+              <p className="small">You can upload multiple files at once.</p>
+              <input
+                key={fileInputKey}
+                type="file"
+                multiple
+                onChange={handleFileSelection}
+                disabled={!uploadsEnabled || currentBot.status === "SUBMITTED"}
+              />
+              <div className="row">
+                <div className="small">
+                  {pendingFiles.length ? `${pendingFiles.length} file(s) selected` : "No files selected"}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleUpload()}
+                  disabled={!uploadsEnabled || currentBot.status === "SUBMITTED" || uploading || !pendingFiles.length}
+                >
+                  {uploading ? "Uploading..." : "Upload selected"}
+                </button>
+              </div>
               <div className="file-list">
                 {documents.map((doc) => (
                   <div className="file-item" key={doc.id}>
                     <div className="file-meta">
                       <div className="file-name" title={doc.filename}>{doc.filename}</div>
-                      <div className="small mono">{doc.mimeType}</div>
+                      <div className="row">
+                        <div className="small mono">{doc.mimeType}</div>
+                        <span className={`status-pill ${(doc.status || "").toLowerCase()}`}>{doc.status}</span>
+                      </div>
                     </div>
-                    <div className="small">{(doc.sizeBytes / 1024).toFixed(1)} KB</div>
+                    <div className="row">
+                      <div className="small">{(doc.sizeBytes / 1024).toFixed(1)} KB</div>
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => void deleteDocument(doc.id)}
+                        disabled={
+                          !uploadsEnabled ||
+                          currentBot.status === "SUBMITTED" ||
+                          deletingDocumentId === doc.id
+                        }
+                      >
+                        {deletingDocumentId === doc.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
                   </div>
                 ))}
                 {!documents.length ? <p>No files uploaded yet.</p> : null}
+              </div>
+              </div>
+
+              <div className="divider" />
+              <div className="row">
+                <button
+                  onClick={saveBot}
+                  disabled={loading || uploading || pendingFiles.length > 0 || currentBot.status === "SUBMITTED"}
+                >
+                  Save settings
+                </button>
+                <button className="secondary" onClick={toggleSubmission} disabled={loading || !uploadsEnabled}>
+                  {currentBot.status === "SUBMITTED" ? "Revert submission" : "Submit for grading"}
+                </button>
               </div>
             </div>
           </section>
