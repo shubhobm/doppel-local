@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 
 type ManagedUser = {
   id: string;
@@ -9,10 +9,27 @@ type ManagedUser = {
   createdAt: string;
 };
 
-type BulkResult = {
-  created: ManagedUser[];
-  skipped: string[];
-  invalid: string[];
+type ManagedDocument = {
+  id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  chunkCount: number;
+  status: string;
+};
+
+type ManagedBot = {
+  id: string;
+  name: string;
+  status: string;
+  systemPrompt: string;
+  temperature: number;
+  topP: number;
+  topK: number;
+  maxOutputTokens: number;
+  configVersion: number;
+  submittedAt: string | null;
+  documents: ManagedDocument[];
 };
 
 type Props = {
@@ -29,10 +46,15 @@ export function AdminUserManager({ currentUserId, users: initialUsers }: Props) 
   const [deletingUserId, setDeletingUserId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [bulkLoading, setBulkLoading] = useState(false);
-  const [bulkError, setBulkError] = useState("");
-  const [bulkResult, setBulkResult] = useState<BulkResult | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [inspectUsername, setInspectUsername] = useState("");
+  const [inspectLoading, setInspectLoading] = useState(false);
+  const [inspectedUser, setInspectedUser] = useState<{ id: string; username: string; role: string } | null>(null);
+  const [inspectedBots, setInspectedBots] = useState<ManagedBot[]>([]);
+  const [selectedBotId, setSelectedBotId] = useState("");
+  const [adminQuestion, setAdminQuestion] = useState("");
+  const [adminQueryLoading, setAdminQueryLoading] = useState(false);
+  const [adminAnswer, setAdminAnswer] = useState("");
+  const [adminQueryError, setAdminQueryError] = useState("");
 
   const sortedUsers = useMemo(() => {
     return [...users].sort((a, b) => a.email.localeCompare(b.email));
@@ -100,45 +122,75 @@ export function AdminUserManager({ currentUserId, users: initialUsers }: Props) 
 
     setUsers((previous) => previous.filter((candidate) => candidate.id !== userId));
     setSuccess("User deleted.");
+
+    if (inspectedUser?.id === userId) {
+      setInspectedUser(null);
+      setInspectedBots([]);
+      setSelectedBotId("");
+      setAdminAnswer("");
+      setAdminQuestion("");
+    }
   }
 
-  async function handleBulkUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) {
+  async function inspectUserBots() {
+    const normalized = inspectUsername.trim().toLowerCase();
+    if (!normalized) {
+      setAdminQueryError("Select a user first.");
       return;
     }
 
-    setBulkLoading(true);
-    setBulkError("");
-    setBulkResult(null);
-    setError("");
-    setSuccess("");
+    setInspectLoading(true);
+    setAdminQueryError("");
+    setAdminAnswer("");
 
-    try {
-      const csv = await file.text();
-      const response = await fetch("/api/admin/users/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ csv })
-      });
+    const response = await fetch("/api/admin/bots/inspect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: normalized })
+    });
+    const payload = await response.json().catch(() => ({}));
+    setInspectLoading(false);
 
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setBulkError(payload.error ?? "Could not process CSV.");
-        return;
-      }
-
-      const result = payload as BulkResult;
-      setBulkResult(result);
-      if (result.created.length > 0) {
-        setUsers((previous) => [...previous, ...result.created]);
-      }
-    } finally {
-      setBulkLoading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+    if (!response.ok) {
+      setAdminQueryError(payload.error ?? "Could not load bot inventory.");
+      return;
     }
+
+    setInspectedUser(payload.user ?? null);
+    const nextBots = Array.isArray(payload.bots) ? (payload.bots as ManagedBot[]) : [];
+    setInspectedBots(nextBots);
+    setSelectedBotId(nextBots[0]?.id ?? "");
+  }
+
+  async function askBotAsAdmin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedBotId || !adminQuestion.trim()) {
+      setAdminQueryError("Select a bot and enter a question.");
+      return;
+    }
+
+    setAdminQueryLoading(true);
+    setAdminQueryError("");
+    setAdminAnswer("");
+
+    const response = await fetch("/api/admin/bots/query", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        botId: selectedBotId,
+        question: adminQuestion.trim(),
+        sessionKey: `admin-ui-${selectedBotId}`
+      })
+    });
+    const payload = await response.json().catch(() => ({}));
+    setAdminQueryLoading(false);
+
+    if (!response.ok) {
+      setAdminQueryError(payload.error ?? "Admin bot query failed.");
+      return;
+    }
+
+    setAdminAnswer(typeof payload.answer === "string" ? payload.answer : "No answer returned.");
   }
 
   return (
@@ -193,34 +245,6 @@ export function AdminUserManager({ currentUserId, users: initialUsers }: Props) 
         {error ? <div className="error">{error}</div> : null}
         {success ? <div className="success">{success}</div> : null}
 
-        <div className="stack">
-          <div>
-            <div className="label">Bulk add from CSV</div>
-            <p className="small">
-              Upload a CSV with an <span className="mono">Email ID</span> column. A user is created for
-              each row with the username taken from the part before the @ in the email address, and the
-              password set to that same username.
-            </p>
-          </div>
-          <div className="row">
-            <input ref={fileInputRef} type="file" accept=".csv,text/csv" onChange={(event) => void handleBulkUpload(event)} disabled={bulkLoading} />
-          </div>
-
-          {bulkLoading ? <p className="small">Processing CSV...</p> : null}
-          {bulkError ? <div className="error">{bulkError}</div> : null}
-          {bulkResult ? (
-            <div className="success">
-              <p>Created {bulkResult.created.length} user(s).</p>
-              {bulkResult.skipped.length > 0 ? (
-                <p className="small">Skipped (already exist): {bulkResult.skipped.join(", ")}</p>
-              ) : null}
-              {bulkResult.invalid.length > 0 ? (
-                <p className="small">Skipped (invalid email): {bulkResult.invalid.join(", ")}</p>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-
         <div className="table-wrap">
           <table className="bots-table">
             <thead>
@@ -253,6 +277,116 @@ export function AdminUserManager({ currentUserId, users: initialUsers }: Props) 
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="section-divider" />
+
+        <div className="stack">
+          <div>
+            <h3>Inspect and query any student bot</h3>
+            <p className="small">Select a student, review all bot settings/files, then query any bot directly as admin.</p>
+          </div>
+
+          <div className="admin-bot-query-grid">
+            <div>
+              <div className="label">Student username</div>
+              <select
+                value={inspectUsername}
+                onChange={(event) => setInspectUsername(event.target.value)}
+              >
+                <option value="">Select a user</option>
+                {sortedUsers.map((candidate) => (
+                  <option key={candidate.id} value={candidate.email}>
+                    {candidate.email} ({candidate.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="row align-end">
+              <button type="button" onClick={() => void inspectUserBots()} disabled={inspectLoading || !inspectUsername}>
+                {inspectLoading ? "Loading bots..." : "Load user bots"}
+              </button>
+            </div>
+          </div>
+
+          {inspectedUser ? (
+            <p className="small">
+              Viewing: <span className="mono">{inspectedUser.username}</span> ({inspectedUser.role})
+            </p>
+          ) : null}
+
+          {inspectedBots.length ? (
+            <div className="table-wrap">
+              <table className="bots-table">
+                <thead>
+                  <tr>
+                    <th>Bot</th>
+                    <th>Status</th>
+                    <th>LLM parameters</th>
+                    <th>Files</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inspectedBots.map((bot) => (
+                    <tr key={bot.id}>
+                      <td>
+                        <div><strong>{bot.name}</strong></div>
+                        <div className="small mono">{bot.id}</div>
+                      </td>
+                      <td>
+                        <span className={`status-pill ${bot.status === "SUBMITTED" ? "submitted" : "draft"}`}>{bot.status}</span>
+                      </td>
+                      <td className="small mono">
+                        temp={bot.temperature}, topP={bot.topP}, topK={bot.topK}, maxTokens={bot.maxOutputTokens}, cfg={bot.configVersion}
+                      </td>
+                      <td>
+                        <div className="small">{bot.documents.length} file(s)</div>
+                        <div className="small mono">{bot.documents.slice(0, 3).map((doc) => doc.filename).join(", ") || "None"}</div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : inspectedUser ? (
+            <p className="small">No bots found for this user.</p>
+          ) : null}
+
+          <form className="stack" onSubmit={askBotAsAdmin}>
+            <div>
+              <div className="label">Target bot</div>
+              <select value={selectedBotId} onChange={(event) => setSelectedBotId(event.target.value)} disabled={!inspectedBots.length}>
+                <option value="">Select a bot</option>
+                {inspectedBots.map((bot) => (
+                  <option key={bot.id} value={bot.id}>
+                    {bot.name} [{bot.status}] - {bot.id}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <div className="label">Question</div>
+              <textarea
+                value={adminQuestion}
+                onChange={(event) => setAdminQuestion(event.target.value)}
+                placeholder="Ask this student's bot any question"
+                rows={3}
+              />
+            </div>
+            <div className="row">
+              <button type="submit" disabled={adminQueryLoading || !selectedBotId || !adminQuestion.trim()}>
+                {adminQueryLoading ? "Querying bot..." : "Query selected bot"}
+              </button>
+            </div>
+          </form>
+
+          {adminQueryError ? <div className="error">{adminQueryError}</div> : null}
+          {adminAnswer ? (
+            <div className="card-subtle stack">
+              <div className="kicker">Admin response</div>
+              <div>{adminAnswer}</div>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

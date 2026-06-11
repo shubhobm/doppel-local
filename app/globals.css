@@ -691,6 +691,31 @@ p {
   gap: 14px;
 }
 
+.admin-bot-query-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.align-end {
+  align-items: end;
+}
+
+.section-divider {
+  height: 1px;
+  border: 0;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.card-subtle {
+  border: 1px solid var(--border);
+  background: rgba(200, 79, 42, 0.04);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 
 @media (max-width: 1024px) {
@@ -698,7 +723,8 @@ p {
   .split,
   .workspace-columns,
   .panel-grid,
-  .admin-user-form-grid {
+  .admin-user-form-grid,
+  .admin-bot-query-grid {
     grid-template-columns: 1fr;
   }
 
