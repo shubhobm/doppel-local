@@ -21,6 +21,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Uploads are currently disabled." }, { status: 403 });
   }
 
+  if (process.env.VERCEL === "1" && env.UPLOAD_BACKEND === "local") {
+    return NextResponse.json(
+      { error: "Upload backend is misconfigured for Vercel. Set UPLOAD_BACKEND=vercel-blob and configure BLOB_READ_WRITE_TOKEN." },
+      { status: 500 }
+    );
+  }
+
   const session = await getSessionUserFromRequest(request);
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -110,12 +117,30 @@ export async function POST(request: NextRequest) {
       });
       results.push(documentId);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Upload processing failed", {
+        botId: bot.id,
+        fileName: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+        backend: env.UPLOAD_BACKEND,
+        error: errorMessage
+      });
+
       if (documentId) {
         await db.sourceDocument.update({
           where: { id: documentId },
           data: { status: "FAILED" }
         });
       }
+
+      if (errorMessage.includes("BLOB_READ_WRITE_TOKEN")) {
+        return NextResponse.json(
+          { error: "Blob storage token is missing. Set BLOB_READ_WRITE_TOKEN in your deployment environment." },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json({ error: "Could not process uploaded file." }, { status: 500 });
     }
   }
