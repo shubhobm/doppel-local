@@ -1,18 +1,12 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 
 type ManagedUser = {
   id: string;
   email: string;
   role: "STUDENT" | "GRADER" | "ADMIN";
   createdAt: string;
-};
-
-type BulkResult = {
-  created: ManagedUser[];
-  skipped: string[];
-  invalid: string[];
 };
 
 type Props = {
@@ -29,10 +23,6 @@ export function AdminUserManager({ currentUserId, users: initialUsers }: Props) 
   const [deletingUserId, setDeletingUserId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [bulkLoading, setBulkLoading] = useState(false);
-  const [bulkError, setBulkError] = useState("");
-  const [bulkResult, setBulkResult] = useState<BulkResult | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sortedUsers = useMemo(() => {
     return [...users].sort((a, b) => a.email.localeCompare(b.email));
@@ -102,45 +92,6 @@ export function AdminUserManager({ currentUserId, users: initialUsers }: Props) 
     setSuccess("User deleted.");
   }
 
-  async function handleBulkUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    setBulkLoading(true);
-    setBulkError("");
-    setBulkResult(null);
-    setError("");
-    setSuccess("");
-
-    try {
-      const csv = await file.text();
-      const response = await fetch("/api/admin/users/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ csv })
-      });
-
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setBulkError(payload.error ?? "Could not process CSV.");
-        return;
-      }
-
-      const result = payload as BulkResult;
-      setBulkResult(result);
-      if (result.created.length > 0) {
-        setUsers((previous) => [...previous, ...result.created]);
-      }
-    } finally {
-      setBulkLoading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  }
-
   return (
     <section className="card">
       <div className="card-inner stack">
@@ -192,34 +143,6 @@ export function AdminUserManager({ currentUserId, users: initialUsers }: Props) 
 
         {error ? <div className="error">{error}</div> : null}
         {success ? <div className="success">{success}</div> : null}
-
-        <div className="stack">
-          <div>
-            <div className="label">Bulk add from CSV</div>
-            <p className="small">
-              Upload a CSV with an <span className="mono">Email ID</span> column. A user is created for
-              each row with the username taken from the part before the @ in the email address, and the
-              password set to that same username.
-            </p>
-          </div>
-          <div className="row">
-            <input ref={fileInputRef} type="file" accept=".csv,text/csv" onChange={(event) => void handleBulkUpload(event)} disabled={bulkLoading} />
-          </div>
-
-          {bulkLoading ? <p className="small">Processing CSV...</p> : null}
-          {bulkError ? <div className="error">{bulkError}</div> : null}
-          {bulkResult ? (
-            <div className="success">
-              <p>Created {bulkResult.created.length} user(s).</p>
-              {bulkResult.skipped.length > 0 ? (
-                <p className="small">Skipped (already exist): {bulkResult.skipped.join(", ")}</p>
-              ) : null}
-              {bulkResult.invalid.length > 0 ? (
-                <p className="small">Skipped (invalid email): {bulkResult.invalid.join(", ")}</p>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
 
         <div className="table-wrap">
           <table className="bots-table">
