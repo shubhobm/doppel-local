@@ -495,7 +495,7 @@ export function StudentWorkspace({
                   ? "Upload PDFs, text files, DOCX, or markdown files. The system indexes them automatically."
                   : "Source uploads are disabled. This chatbot currently runs in system-prompt-only mode."}
               </p>
-              <p className="small">You can upload multiple files at once.</p>
+              <p className="small">You can upload multiple files at once. Click Save Settings below to reflect the changes.</p>
               <input
                 key={fileInputKey}
                 type="file"
