@@ -11,19 +11,53 @@ type BotSummary = {
   updatedAt: string;
 };
 
+type OwnerOption = {
+  id: string;
+  username: string;
+  role: "STUDENT" | "GRADER" | "ADMIN";
+};
+
 type Props = {
   bots: BotSummary[];
   activeBotId: string;
+  ownerOptions?: OwnerOption[];
+  selectedOwnerId?: string;
+  showOwnerSelector?: boolean;
+  canManageBots?: boolean;
+  includeOwnerInBotLinks?: boolean;
 };
 
-export function BotDashboardTable({ bots, activeBotId }: Props) {
+export function BotDashboardTable({
+  bots,
+  activeBotId,
+  ownerOptions = [],
+  selectedOwnerId = "",
+  showOwnerSelector = false,
+  canManageBots = true,
+  includeOwnerInBotLinks = false
+}: Props) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [deletingBotId, setDeletingBotId] = useState("");
   const [error, setError] = useState("");
 
   function goToBot(botId: string) {
-    router.push(`/workspace?bot=${botId}`);
+    const params = new URLSearchParams();
+    params.set("bot", botId);
+    if (includeOwnerInBotLinks && selectedOwnerId) {
+      params.set("owner", selectedOwnerId);
+    }
+    router.push(`/workspace?${params.toString()}`);
+    router.refresh();
+  }
+
+  function changeOwner(ownerId: string) {
+    const search = new URLSearchParams();
+    search.set("tab", "bots");
+    if (ownerId) {
+      search.set("owner", ownerId);
+    }
+    router.push(`/dashboard?${search.toString()}`);
     router.refresh();
   }
 
@@ -82,10 +116,27 @@ export function BotDashboardTable({ bots, activeBotId }: Props) {
             <div className="kicker">Dashboard</div>
             <h2>Doppel chatbots</h2>
           </div>
-          <button onClick={createBot} disabled={creating}>
-            {creating ? "Creating..." : "New chatbot"}
-          </button>
+          <div className="row">
+            {showOwnerSelector ? (
+              <select
+                value={selectedOwnerId}
+                onChange={(event) => changeOwner(event.target.value)}
+                aria-label="Select user"
+              >
+                {ownerOptions.map((candidate) => (
+                  <option key={candidate.id} value={candidate.id}>
+                    {candidate.username} ({candidate.role})
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <button onClick={createBot} disabled={creating || !canManageBots}>
+              {!canManageBots ? "Read-only" : creating ? "Creating..." : "New chatbot"}
+            </button>
+          </div>
         </div>
+
+        {!canManageBots ? <p className="small">Viewing another user's bots in read-only mode.</p> : null}
 
         {error ? <div className="error">{error}</div> : null}
 
@@ -117,13 +168,13 @@ export function BotDashboardTable({ bots, activeBotId }: Props) {
                     <button
                       type="button"
                       className="secondary"
-                      disabled={deletingBotId === bot.id || bot.isDemo}
+                      disabled={deletingBotId === bot.id || bot.isDemo || !canManageBots}
                       onClick={(event) => {
                         event.stopPropagation();
                         void deleteBot(bot.id);
                       }}
                     >
-                      {bot.isDemo ? "Protected" : deletingBotId === bot.id ? "Deleting..." : "Delete"}
+                      {!canManageBots ? "Read-only" : bot.isDemo ? "Protected" : deletingBotId === bot.id ? "Deleting..." : "Delete"}
                     </button>
                   </td>
                 </tr>

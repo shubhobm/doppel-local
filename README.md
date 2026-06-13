@@ -18,6 +18,7 @@ Copy `.env.example` to `.env` and set:
 - `DATABASE_URL`
 - `AUTH_SECRET`
 - `APP_URL`
+- `ADMIN_API_KEY`
 - `GRADER_API_KEY`
 - `OPENAI_API_KEY`
 
@@ -54,7 +55,7 @@ SMTP variables are not required for the static login flow.
 
 After import:
 1. In Vercel project Storage, create/attach Vercel Postgres.
-2. Set app secrets in Environment Variables: `AUTH_SECRET`, `APP_URL`, `GRADER_API_KEY`, `OPENAI_API_KEY`.
+2. Set app secrets in Environment Variables: `AUTH_SECRET`, `APP_URL`, `ADMIN_API_KEY`, `GRADER_API_KEY`, `OPENAI_API_KEY`.
 3. Configure upload mode:
   - system-prompt-only: `UPLOADS_ENABLED=false`
   - uploads enabled: `UPLOADS_ENABLED=true`, `UPLOAD_BACKEND=vercel-blob`, `BLOB_READ_WRITE_TOKEN=<token>`
@@ -80,5 +81,36 @@ Body:
 {
   "studentId": "student_bot_id",
   "question": "Explain the role of RAG in enterprise QA."
+}
+```
+
+## Admin API-Key Endpoints
+These endpoints are intended for privileged service-to-service operations and use a static header key.
+
+Header:
+- `x-admin-key: <ADMIN_API_KEY>`
+
+List all bots for a target user with LLM settings and files:
+
+`POST /api/admin/key/user-bots`
+
+Body:
+```json
+{
+  "userId": "optional_user_id",
+  "username": "optional_username"
+}
+```
+
+Query any bot by any user (draft or submitted):
+
+`POST /api/admin/key/query`
+
+Body:
+```json
+{
+  "botId": "bot_id",
+  "question": "What is this bot configured to answer?",
+  "sessionKey": "optional_session_key"
 }
 ```

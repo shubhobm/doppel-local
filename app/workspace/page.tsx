@@ -6,7 +6,7 @@ import { ensureDemoBotForUser } from "@/lib/demoBot";
 import { env } from "@/lib/env";
 
 type WorkspacePageProps = {
-  searchParams?: Promise<{ bot?: string }>;
+  searchParams?: Promise<{ bot?: string; owner?: string }>;
 };
 
 export default async function WorkspacePage({ searchParams }: WorkspacePageProps) {
@@ -20,8 +20,18 @@ export default async function WorkspacePage({ searchParams }: WorkspacePageProps
     redirect("/login");
   }
 
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const ownerId = resolvedSearchParams.owner;
+  const isAdminViewingOtherUser = Boolean(ownerId && ownerId !== user.id);
+
+  if (isAdminViewingOtherUser && user.role !== "ADMIN") {
+    redirect("/dashboard");
+  }
+
+  const targetUserId = isAdminViewingOtherUser ? ownerId! : user.id;
+
   let bots = await db.studentBot.findMany({
-    where: { userId: user.id },
+    where: { userId: targetUserId },
     orderBy: { createdAt: "asc" },
     include: {
       documents: {
@@ -30,14 +40,22 @@ export default async function WorkspacePage({ searchParams }: WorkspacePageProps
     }
   });
 
-  if (!bots.length) {
+  if (!bots.length && targetUserId === user.id) {
     const created = await ensureDemoBotForUser(user.id);
     bots = [created];
   }
 
-  const resolvedSearchParams = searchParams ? await searchParams : {};
+  if (!bots.length) {
+    redirect("/dashboard");
+  }
+
   if (!resolvedSearchParams.bot) {
-    redirect(`/workspace?bot=${bots[0].id}`);
+    const params = new URLSearchParams();
+    params.set("bot", bots[0].id);
+    if (isAdminViewingOtherUser && ownerId) {
+      params.set("owner", ownerId);
+    }
+    redirect(`/workspace?${params.toString()}`);
   }
 
   const activeBot = bots.find((candidate) => candidate.id === resolvedSearchParams.bot);
@@ -75,8 +93,10 @@ export default async function WorkspacePage({ searchParams }: WorkspacePageProps
           }))
         }))}
         activeBotId={activeBot.id}
-          uploadsEnabled={env.UPLOADS_ENABLED}
+        uploadsEnabled={env.UPLOADS_ENABLED}
         totalBytes={totalBytes}
+        readOnly={isAdminViewingOtherUser}
+        useAdminQueryEndpoint={isAdminViewingOtherUser}
       />
     </main>
   );
