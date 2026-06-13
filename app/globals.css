@@ -683,6 +683,25 @@ p {
   border: 1px solid rgba(200, 79, 42, 0.2);
 }
 
+.status-pill.ready {
+  background: rgba(13, 122, 74, 0.1);
+  color: #0a6040;
+  border: 1px solid rgba(13, 122, 74, 0.22);
+}
+
+.status-pill.processing,
+.status-pill.uploading {
+  background: rgba(200, 79, 42, 0.11);
+  color: #9f2a23;
+  border: 1px solid rgba(200, 79, 42, 0.22);
+}
+
+.status-pill.failed {
+  background: rgba(248, 113, 113, 0.12);
+  color: #b42318;
+  border: 1px solid rgba(248, 113, 113, 0.22);
+}
+
 /* ── Admin form ──────────────────────────────────────────── */
 
 .admin-user-form-grid {

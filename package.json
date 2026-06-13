@@ -6,6 +6,9 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
+    "test": "vitest run --config vitest.config.ts",
+    "test:e2e-upload": "node tests/e2e/upload-flow.mjs",
+    "test:browser": "playwright test",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
@@ -28,6 +31,9 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.7",
     "@types/nodemailer": "^8.0.0",
@@ -35,8 +41,10 @@
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^29.1.1",
     "postcss": "^8.5.1",
     "prisma": "^5.22.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.8"
   }
 }
