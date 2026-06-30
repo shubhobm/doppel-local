@@ -6,8 +6,6 @@ A cloud-ready Next.js app for an AI-native midterm where students upload source 
 
 Use the Docker-based flow below unless you have a specific reason not to. It is the most reliable way to run the app locally because it starts both Postgres and the Next.js server for you.
 
-> Note: If you use a vibe-coding assistant like Cursor or GitHub Copilot, you can ask it to run these setup commands for you, but follow the exact steps below and verify each command output.
-
 ### What you need first
 1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) or [Docker Engine](https://docs.docker.com/engine/install/) + [Docker Compose plugin](https://docs.docker.com/compose/install/).
 2. Make sure Docker is running before you start.
@@ -18,6 +16,9 @@ OPENAI_API_KEY="your_openai_api_key_here"
 ```
 
 ### Recommended Docker flow
+
+> Note: If you use a vibe-coding assistant like Cursor or GitHub Copilot, you can ask it to run these setup commands for you, but follow the exact steps below and verify each command output.
+
 1. Open a terminal in the repository root: `doppel-local/`.
 2. Create the local runtime file if it does not already exist:
 
