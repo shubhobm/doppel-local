@@ -2,44 +2,6 @@
 
 A cloud-ready Next.js app for an AI-native midterm where students upload source material, configure a chatbot, and submit it for grader queries.
 
-## Features
-- Login with fixed exam username `test` and stored password hash
-- Single-user local workflow with no student account creation UI
-- Logged-in forgot-password flow for updating password
-- Frozen `gpt-5-nano` chat model
-- Student-controlled bot names, source uploads, system prompt, and LLM parameters
-- Multi-turn preview chat
-- Postgres-backed storage via Prisma
-- Lightweight vector retrieval using stored chunk embeddings
-- Protected grader API for querying a submitted student bot
-- Container-friendly deployment
-
-## Required environment variables
-Copy `.env.example` to `.env` and set:
-- `DATABASE_URL`
-- `AUTH_SECRET`
-- `APP_URL`
-- `ADMIN_API_KEY`
-- `GRADER_API_KEY`
-- `OPENAI_API_KEY`
-
-OpenAI key resolution:
-- Deployed environments: use runtime `OPENAI_API_KEY` (for example, injected from your platform secret settings).
-- Local development: if `OPENAI_API_KEY` is not present in process env, the app falls back to `.env.local`.
-
-Upload feature flag:
-- `UPLOADS_ENABLED` controls whether source document upload/retrieval is enabled.
-- Default is `true`.
-- Set `UPLOADS_ENABLED=true` to enable uploads.
-
-Upload storage backend:
-- `UPLOAD_BACKEND=local` (default) stores files on local disk at `UPLOAD_DIR`.
-- `UPLOAD_BACKEND=vercel-blob` stores files in Vercel Blob.
-- When using `vercel-blob`, set `BLOB_READ_WRITE_TOKEN` in your environment.
-- `BLOB_ACCESS` controls upload access mode for Blob storage (`private` default, set `public` only for public stores).
-
-SMTP variables are not required for the static login flow.
-
 ## Local deployment for students
 
 Use the Docker-based flow below unless you have a specific reason not to. It is the most reliable way to run the app locally because it starts both Postgres and the Next.js server for you.
@@ -110,6 +72,44 @@ npm run dev
 - Do not try to create new users. This local build is intentionally single-user only.
 - If the login page looks empty or the app fails to load, check that Docker is running and that nothing else is already using ports `3000` or `5432`.
 - If you change the database or remove the Docker volumes, the app will rebuild the schema the next time you start it.
+
+## Features
+- Login with fixed exam username `test` and stored password hash
+- Single-user local workflow with no student account creation UI
+- Logged-in forgot-password flow for updating password
+- Frozen `gpt-5-nano` chat model
+- Student-controlled bot names, source uploads, system prompt, and LLM parameters
+- Multi-turn preview chat
+- Postgres-backed storage via Prisma
+- Lightweight vector retrieval using stored chunk embeddings
+- Protected grader API for querying a submitted student bot
+- Container-friendly deployment
+
+## Required environment variables
+Copy `.env.example` to `.env` and set:
+- `DATABASE_URL`
+- `AUTH_SECRET`
+- `APP_URL`
+- `ADMIN_API_KEY`
+- `GRADER_API_KEY`
+- `OPENAI_API_KEY`
+
+OpenAI key resolution:
+- Deployed environments: use runtime `OPENAI_API_KEY` (for example, injected from your platform secret settings).
+- Local development: if `OPENAI_API_KEY` is not present in process env, the app falls back to `.env.local`.
+
+Upload feature flag:
+- `UPLOADS_ENABLED` controls whether source document upload/retrieval is enabled.
+- Default is `true`.
+- Set `UPLOADS_ENABLED=true` to enable uploads.
+
+Upload storage backend:
+- `UPLOAD_BACKEND=local` (default) stores files on local disk at `UPLOAD_DIR`.
+- `UPLOAD_BACKEND=vercel-blob` stores files in Vercel Blob.
+- When using `vercel-blob`, set `BLOB_READ_WRITE_TOKEN` in your environment.
+- `BLOB_ACCESS` controls upload access mode for Blob storage (`private` default, set `public` only for public stores).
+
+SMTP variables are not required for the static login flow.
 
 ## One-click Vercel + Postgres
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/shubhobm/doppel&project-name=doppel)
