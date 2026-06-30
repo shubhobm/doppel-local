@@ -6,8 +6,10 @@ A cloud-ready Next.js app for an AI-native midterm where students upload source 
 
 Use the Docker-based flow below unless you have a specific reason not to. It is the most reliable way to run the app locally because it starts both Postgres and the Next.js server for you.
 
+> Note: If you use a vibe-coding assistant like Cursor or GitHub Copilot, you can ask it to run these setup commands for you, but follow the exact steps below and verify each command output.
+
 ### What you need first
-1. Install Docker Desktop or the Docker Engine + Compose plugin.
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) or [Docker Engine](https://docs.docker.com/engine/install/) + [Docker Compose plugin](https://docs.docker.com/compose/install/).
 2. Make sure Docker is running before you start.
 3. Have access to this repository on your machine.
 4. Open `.env.local` in your editor and set your OpenAI key on this line:
@@ -23,19 +25,19 @@ OPENAI_API_KEY="your_openai_api_key_here"
 cp .env.example .env.local
 ```
 
-4. Leave the other defaults in `.env.local` in place for local student use.
-5. Start the full stack:
+3. Leave the other defaults in `.env.local` in place for local student use.
+4. Start the full stack:
 
 ```bash
 docker compose up --build
 ```
 
-6. Wait until the app finishes starting. The first boot can take a minute because Docker has to build the image, install dependencies, and initialize Postgres.
-7. Open `http://localhost:3000/login` in your browser.
-8. Sign in with the fixed local student account:
+5. Wait until the app finishes starting. The first boot can take a minute because Docker has to build the image, install dependencies, and initialize Postgres.
+6. Open `http://localhost:3000/login` in your browser.
+7. Sign in with the fixed local student account:
   - Username: `test`
   - Password: `test1234`
-9. After login, you should land in the workspace and be able to use the chatbot flow as a student.
+8. After login, you should land in the workspace and be able to use the chatbot flow as a student.
 
 ### What the Docker command does
 - Starts Postgres on port `5432`.
