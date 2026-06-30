@@ -10,6 +10,10 @@ Use the Docker-based flow below unless you have a specific reason not to. It is 
 1. Install Docker Desktop or the Docker Engine + Compose plugin.
 2. Make sure Docker is running before you start.
 3. Have access to this repository on your machine.
+4. Open `.env.local` in your editor and set your OpenAI key on this line:
+```bash
+OPENAI_API_KEY="your_openai_api_key_here"
+```
 
 ### Recommended Docker flow
 1. Open a terminal in the repository root: `doppel-local/`.
@@ -19,19 +23,19 @@ Use the Docker-based flow below unless you have a specific reason not to. It is 
 cp .env.example .env.local
 ```
 
-3. Leave the defaults in `.env.local` in place for local student use.
-4. Start the full stack:
+4. Leave the other defaults in `.env.local` in place for local student use.
+5. Start the full stack:
 
 ```bash
 docker compose up --build
 ```
 
-5. Wait until the app finishes starting. The first boot can take a minute because Docker has to build the image, install dependencies, and initialize Postgres.
-6. Open `http://localhost:3000/login` in your browser.
-7. Sign in with the fixed local student account:
+6. Wait until the app finishes starting. The first boot can take a minute because Docker has to build the image, install dependencies, and initialize Postgres.
+7. Open `http://localhost:3000/login` in your browser.
+8. Sign in with the fixed local student account:
   - Username: `test`
   - Password: `test1234`
-8. After login, you should land in the workspace and be able to use the chatbot flow as a student.
+9. After login, you should land in the workspace and be able to use the chatbot flow as a student.
 
 ### What the Docker command does
 - Starts Postgres on port `5432`.
@@ -57,8 +61,9 @@ docker compose down -v
 Use this only if you already have a Postgres database running locally.
 
 1. Copy `.env.example` to `.env.local`.
-2. Set `DATABASE_URL` to point at your Postgres instance.
-3. Run:
+2. Open `.env.local` and set `DATABASE_URL` to point at your Postgres instance.
+3. Set `OPENAI_API_KEY="your_openai_api_key_here"` in the same `.env.local` file.
+4. Run:
 
 ```bash
 npm install
@@ -66,7 +71,7 @@ npx prisma db push
 npm run dev
 ```
 
-4. Open `http://localhost:3000/login` and sign in with `test` / `test1234`.
+5. Open `http://localhost:3000/login` and sign in with `test` / `test1234`.
 
 ### Important notes for students
 - Do not try to create new users. This local build is intentionally single-user only.
@@ -93,6 +98,8 @@ Copy `.env.example` to `.env` and set:
 - `ADMIN_API_KEY`
 - `GRADER_API_KEY`
 - `OPENAI_API_KEY`
+
+For local runs, put `OPENAI_API_KEY` in `.env.local` in the repository root. Do not edit `.env.example` for your personal key; that file is only the template.
 
 OpenAI key resolution:
 - Deployed environments: use runtime `OPENAI_API_KEY` (for example, injected from your platform secret settings).
