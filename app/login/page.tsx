@@ -5,7 +5,7 @@ import { type FormEvent, useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("smajumdar");
+  const [username, setUsername] = useState("test");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -56,7 +56,7 @@ export default function LoginPage() {
             <form className="stack" onSubmit={handleSubmit}>
               <div>
                 <div className="label">Username</div>
-                <input value={username} onChange={(event) => setUsername(event.target.value)} type="text" placeholder="smajumdar" required />
+                  <input value={username} onChange={(event) => setUsername(event.target.value)} type="text" placeholder="test" required />
               </div>
               <div>
                 <div className="label">Password</div>
@@ -68,7 +68,7 @@ export default function LoginPage() {
                 {loading ? "Signing in..." : "Sign in"}
               </button>
             </form>
-            <div className="notice">Use username <strong>smajumdar</strong> for admin access. Other users sign in with username only.</div>
+            <div className="notice">Use username <strong>test</strong> with password <strong>test1234</strong>.</div>
           </div>
         </section>
       </div>

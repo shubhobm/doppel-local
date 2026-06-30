@@ -2,8 +2,8 @@ import path from "node:path";
 import { writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 
-const USERNAME = process.env.TEST_USERNAME || "smajumdar";
-const PASSWORD = process.env.TEST_PASSWORD || "admin1234";
+const USERNAME = process.env.TEST_USERNAME || "test";
+const PASSWORD = process.env.TEST_PASSWORD || "test1234";
 const FIXTURES_DIR = path.join(process.cwd(), "tests", "browser", "_fixtures");
 
 function writeFixture(name: string, content: string) {

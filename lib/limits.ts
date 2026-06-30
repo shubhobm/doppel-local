@@ -12,5 +12,5 @@ export const VERIFY_LINK_EXPIRY_HOURS = 24;
 export const CHAT_HISTORY_LIMIT = 8;
 export const EMBEDDING_MODEL = "text-embedding-3-small";
 export const CHAT_MODEL = "gpt-5-nano";
-export const STATIC_USERNAME = "smajumdar";
-export const STATIC_PASSWORD = "admin1234";
+export const STATIC_USERNAME = "test";
+export const STATIC_PASSWORD = "test1234";

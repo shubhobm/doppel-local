@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { db } from "@/lib/db";
-import { hashPassword } from "@/lib/auth";
 import { getSessionUserFromRequest } from "@/lib/request";
-import { normalizeUsername } from "@/lib/users";
-
-const createUserSchema = z.object({
-  username: z.string().trim().min(1).max(120),
-  password: z.string().min(8).max(128),
-  role: z.enum(["STUDENT", "GRADER", "ADMIN"]).default("STUDENT")
-});
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -52,35 +43,5 @@ export async function POST(request: NextRequest) {
     return forbidden();
   }
 
-  const parsed = createUserSchema.safeParse(await request.json());
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Enter a valid username, password, and role." }, { status: 400 });
-  }
-
-  const { username, password, role } = parsed.data;
-  const email = normalizeUsername(username);
-  if (!email) {
-    return NextResponse.json({ error: "Enter a valid username only (no @)." }, { status: 400 });
-  }
-
-  const existing = await db.user.findUnique({ where: { email } });
-  if (existing) {
-    return NextResponse.json({ error: "A user with this email already exists." }, { status: 409 });
-  }
-
-  const user = await db.user.create({
-    data: {
-      email,
-      role,
-      passwordHash: await hashPassword(password)
-    },
-    select: {
-      id: true,
-      email: true,
-      role: true,
-      createdAt: true
-    }
-  });
-
-  return NextResponse.json({ user }, { status: 201 });
+  return NextResponse.json({ error: "User creation is disabled in the local student build." }, { status: 403 });
 }

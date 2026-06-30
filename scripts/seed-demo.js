@@ -35,8 +35,8 @@ loadEnvFile(path.join(process.cwd(), ".env"));
 
 const prisma = new PrismaClient();
 
-const STATIC_USERNAME = "smajumdar";
-const STATIC_USER_EMAIL = `${STATIC_USERNAME}@iimb.ac.in`;
+const STATIC_USERNAME = "test";
+const STATIC_USER_EMAIL = STATIC_USERNAME;
 const DEMO_MARKER = "Seeded demo bot for the midterm chatbot";
 const NOTES_FILE = path.join(process.cwd(), "data", "demo-course-notes.md");
 

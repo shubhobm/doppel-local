@@ -3,7 +3,8 @@
 A cloud-ready Next.js app for an AI-native midterm where students upload source material, configure a chatbot, and submit it for grader queries.
 
 ## Features
-- Login with fixed exam username and stored password hash
+- Login with fixed exam username `test` and stored password hash
+- Single-user local workflow with no student account creation UI
 - Logged-in forgot-password flow for updating password
 - Frozen `gpt-5-nano` chat model
 - Student-controlled bot names, source uploads, system prompt, and LLM parameters

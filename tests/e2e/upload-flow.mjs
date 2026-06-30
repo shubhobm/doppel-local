@@ -31,8 +31,8 @@ function parseCookie(setCookieHeader) {
 }
 
 async function main() {
-  const username = process.env.TEST_USERNAME || "smajumdar";
-  const password = process.env.TEST_PASSWORD || "admin1234";
+  const username = process.env.TEST_USERNAME || "test";
+  const password = process.env.TEST_PASSWORD || "test1234";
 
   const login = await request("/api/auth/login", {
     method: "POST",
